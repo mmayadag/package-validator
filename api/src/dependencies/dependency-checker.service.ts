@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import ncu from 'npm-check-updates';
+import semver from 'semver';
 
 export const DEPENDENCY_SECTIONS = [
   'dependencies',
@@ -14,10 +15,14 @@ export type PackageManifest = Partial<Record<DependencySection, Record<string, s
   name?: string;
 };
 
+/** Semver distance between the declared range and the latest release; `major` may break. */
+export type ChangeKind = 'major' | 'minor' | 'patch' | 'unknown';
+
 export interface OutdatedDependency {
   name: string;
   current: string;
   latest: string;
+  change: ChangeKind;
 }
 
 export type OutdatedDependencies = Partial<Record<DependencySection, OutdatedDependency[]>>;
@@ -47,7 +52,7 @@ export function groupBySection(
     const declared = manifest[section] ?? {};
     const outdated = Object.entries(declared)
       .filter(([name]) => name in upgraded)
-      .map(([name, current]) => ({ name, current, latest: upgraded[name] }));
+      .map(([name, current]) => ({ name, current, latest: upgraded[name], change: classifyChange(current, upgraded[name]) }));
 
     if (outdated.length > 0) {
       result[section] = outdated;
@@ -55,4 +60,32 @@ export function groupBySection(
   }
 
   return result;
+}
+
+/**
+ * Compares the lowest versions the two ranges allow. Below 1.0.0 a minor bump
+ * is breaking under caret semantics, so it counts as major. Tags, URLs and
+ * workspace references are `unknown`.
+ */
+export function classifyChange(current: string, latest: string): ChangeKind {
+  let from: semver.SemVer | null;
+  let to: semver.SemVer | null;
+  try {
+    from = semver.minVersion(current);
+    to = semver.minVersion(latest);
+  } catch {
+    return 'unknown';
+  }
+  if (!from || !to) {
+    return 'unknown';
+  }
+
+  const diff = semver.diff(from, to);
+  if (diff === null) {
+    return 'unknown';
+  }
+  if (diff.includes('major') || (from.major === 0 && diff.includes('minor'))) {
+    return 'major';
+  }
+  return diff.includes('minor') ? 'minor' : 'patch';
 }

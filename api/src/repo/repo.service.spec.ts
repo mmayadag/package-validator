@@ -52,7 +52,7 @@ describe('RepoService', () => {
     it('builds a report from the outdated dependencies', async () => {
       givenRepositoryWithPackageJson('{"dependencies":{"express":"^4.0.0"}}');
       dependencyChecker.findOutdated.mockResolvedValue({
-        dependencies: [{ name: 'express', current: '^4.0.0', latest: '^5.1.0' }],
+        dependencies: [{ name: 'express', current: '^4.0.0', latest: '^5.1.0', change: 'major' }],
       });
 
       const report = await service.buildReport(ref);

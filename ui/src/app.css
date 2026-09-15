@@ -7,6 +7,7 @@
   --accent: #0b63ce;
   --accent-hover: #0a55b0;
   --success: #1a7f37;
+  --warning: #9a6700;
   --danger: #cf222e;
   --danger-soft: #ffebe9;
   --radius: 12px;
@@ -29,6 +30,7 @@
     --accent: #4493f8;
     --accent-hover: #6ca4f8;
     --success: #3fb950;
+    --warning: #d29922;
     --danger: #f85149;
     --danger-soft: #3c1618;
     --shadow: none;

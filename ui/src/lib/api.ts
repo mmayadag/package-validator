@@ -3,10 +3,14 @@ import type { RepositoryRef } from './git-url';
 export const REPORT_PERIODS = [6, 12, 24] as const;
 export type ReportPeriod = (typeof REPORT_PERIODS)[number];
 
+export type ChangeKind = 'major' | 'minor' | 'patch' | 'unknown';
+
 export interface OutdatedDependency {
   name: string;
   current: string;
   latest: string;
+  /** Semver distance to the latest release; `major` may break. */
+  change: ChangeKind;
 }
 
 export interface SubscriptionSummary {

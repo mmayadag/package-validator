@@ -93,7 +93,7 @@ describe('API (e2e)', () => {
       github.repositoryExists.mockResolvedValue(true);
       github.getPackageJson.mockResolvedValue('{"dependencies":{"express":"^4.0.0"}}');
       dependencyChecker.findOutdated.mockResolvedValue({
-        dependencies: [{ name: 'express', current: '^4.0.0', latest: '^5.1.0' }],
+        dependencies: [{ name: 'express', current: '^4.0.0', latest: '^5.1.0', change: 'major' }],
       });
 
       const { body } = await request(app.getHttpServer()).get('/repo/details/mmayadag/app').expect(200);

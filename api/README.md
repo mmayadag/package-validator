@@ -34,12 +34,14 @@ A report looks like this:
   "owner": "mmayadag",
   "repo": "bicycle-in-izmir",
   "outdated": {
-    "dependencies": [{ "name": "express", "current": "^4.17.1", "latest": "^5.1.0" }]
+    "dependencies": [{ "name": "express", "current": "^4.17.1", "latest": "^5.1.0", "change": "major" }]
   },
   "html": "<table>…</table>",
   "text": "Outdated dependencies of mmayadag/bicycle-in-izmir …"
 }
 ```
+
+`change` compares the lowest versions the two ranges allow: `major`, `minor` or `patch`; a minor bump below 1.0.0 counts as `major` because caret ranges treat it as breaking. Tags, URLs and workspace references are `unknown`.
 
 ### Subscriptions
 
