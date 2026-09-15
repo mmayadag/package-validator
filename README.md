@@ -2,12 +2,46 @@
 
 [![CI](https://github.com/mmayadag/package-validator/actions/workflows/ci.yml/badge.svg)](https://github.com/mmayadag/package-validator/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/mmayadag/package-validator/actions/workflows/codeql.yml/badge.svg)](https://github.com/mmayadag/package-validator/actions/workflows/codeql.yml)
-[![CodeQL](https://github.com/mmayadag/package-validator/actions/workflows/codeql.yml/badge.svg)](https://github.com/mmayadag/package-validator/actions/workflows/codeql.yml)
 [![Architecture](https://img.shields.io/badge/architecture-diagram-0b63ce)](https://mmayadag.github.io/package-validator/)
 ![Node](https://img.shields.io/badge/node-24.15%2B-339933?logo=nodedotjs&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 Point it at a public GitHub repository and get a report of which `package.json` dependencies have newer versions on npm, in the browser and, after confirming your address, by email every 6, 12 or 24 hours.
+
+## Screenshots
+
+| Check a repository | Report |
+|---|---|
+| ![The form with a validated repository URL, an email field and the delivery period](docs/screenshots/form.png) | ![Outdated dependencies grouped by section, each with a major, minor or patch badge](docs/screenshots/report.png) |
+
+## How it works
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Browser
+    participant Caddy
+    participant API as NestJS API
+    participant GitHub as GitHub GraphQL
+    participant npm as npm registry
+    participant SendGrid
+
+    User->>Caddy: POST /repo/schedule {owner, repo, email, period}
+    Caddy->>API: proxy (same origin)
+    API->>GitHub: repository exists? HEAD:package.json
+    GitHub-->>API: package.json
+    API->>npm: latest version of every dependency
+    npm-->>API: versions
+    API->>API: classify major / minor / patch, cache 1 h, store pending subscription
+    API->>SendGrid: confirmation email
+    API-->>User: report + subscription {status: pending}
+    User->>API: POST /repo/subscriptions/:token/confirm
+    API->>SendGrid: first report
+    loop every hour
+        API->>API: find active subscriptions whose period elapsed
+        API->>SendGrid: report with unsubscribe link
+    end
+```
 
 ## Architecture
 
@@ -93,7 +127,7 @@ Copy [`.env.example`](.env.example) to `.env`. Only `TOKEN` is required; the rep
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Work is tracked as issues on the [project board](https://github.com/users/mmayadag/projects/5); commits follow [Conventional Commits](https://www.conventionalcommits.org/) with the issue number as the scope, for example `feat(#4): restructure the API into modules`. [CodeQL](.github/workflows/codeql.yml) scans every push and pull request. [Dependabot](.github/dependabot.yml) opens grouped update pull requests every Monday for both apps, GitHub Actions and the Docker base images. See [`SECURITY.md`](SECURITY.md) for reporting vulnerabilities.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Work is tracked as issues on the [project board](https://github.com/users/mmayadag/projects/5); commits follow [Conventional Commits](https://www.conventionalcommits.org/) with the issue number as the scope, for example `feat(#4): restructure the API into modules`, and [release-please](https://github.com/googleapis/release-please) turns them into releases and the [changelog](CHANGELOG.md). [CodeQL](.github/workflows/codeql.yml) scans every push and pull request. [Dependabot](.github/dependabot.yml) opens grouped update pull requests every Monday for both apps, GitHub Actions and the Docker base images. See [`SECURITY.md`](SECURITY.md) for reporting vulnerabilities.
 
 ## History
 
