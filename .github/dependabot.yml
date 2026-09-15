@@ -1,0 +1,52 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /api
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: ["type: chore", "area: api"]
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      nestjs:
+        patterns: ["@nestjs/*"]
+      api-tooling:
+        dependency-type: development
+
+  - package-ecosystem: npm
+    directory: /ui
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: ["type: chore", "area: ui"]
+    commit-message:
+      prefix: "chore(deps-dev)"
+    groups:
+      ui-tooling:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: ["type: chore", "area: infra"]
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directories: [/api, /ui]
+    schedule:
+      interval: weekly
+      day: monday
+    labels: ["type: chore", "area: infra"]
+    commit-message:
+      prefix: "chore(docker)"

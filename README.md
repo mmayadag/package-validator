@@ -90,7 +90,7 @@ Copy [`.env.example`](.env.example) to `.env`. Only `TOKEN` is required; the rep
 
 ## Contributing
 
-Work is tracked as issues on the [project board](https://github.com/users/mmayadag/projects/5). Commits follow [Conventional Commits](https://www.conventionalcommits.org/) with the issue number as the scope, for example `feat(#4): restructure the API into modules`. See [`SECURITY.md`](SECURITY.md) for reporting vulnerabilities.
+Work is tracked as issues on the [project board](https://github.com/users/mmayadag/projects/5). Commits follow [Conventional Commits](https://www.conventionalcommits.org/) with the issue number as the scope, for example `feat(#4): restructure the API into modules`. [Dependabot](.github/dependabot.yml) opens grouped update pull requests every Monday for both apps, GitHub Actions and the Docker base images. See [`SECURITY.md`](SECURITY.md) for reporting vulnerabilities.
 
 ## History
 
