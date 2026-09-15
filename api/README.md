@@ -48,6 +48,12 @@ Every email links to `PUBLIC_URL/?unsubscribe=<token>`. The UI asks for confirma
 
 An hourly job (`@nestjs/schedule`) emails every subscription whose period has elapsed, so a report arrives within an hour of being due. A repository that fails (deleted, made private, no `package.json`) is logged and retried on the next run without blocking the others, and overlapping runs are skipped. Nothing is sent while SendGrid is not configured.
 
+### Rate limiting
+
+A global guard limits each client IP per route with a fixed one-minute window: 10 requests for `details`, `schedule` and `DELETE subscriptions` (they call GitHub and npm or touch subscriptions), 60 for everything else. `/health` is never limited. Responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`; a rejected request gets `429` with `Retry-After`.
+
+The client address comes from `X-Forwarded-For` when the request arrives from a loopback or private network, which is how Caddy reaches the API in Docker. Counters live in memory, which suits the single API container; running several replicas would need a shared store. `@nestjs/throttler` is not used because its current release does not support NestJS 12.
+
 ## Configuration
 
 | Variable | Required | Default | Description |

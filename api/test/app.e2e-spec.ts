@@ -177,4 +177,37 @@ describe('API (e2e)', () => {
     it('rejects a malformed token', () =>
       request(app.getHttpServer()).delete('/repo/subscriptions/not-a-token').expect(400));
   });
+
+  describe('rate limiting', () => {
+    it('answers 429 with Retry-After once a client exceeds the strict limit', async () => {
+      github.repositoryExists.mockResolvedValue(false);
+      const statuses: number[] = [];
+      let limited: request.Response | undefined;
+
+      for (let i = 0; i < 12 && !limited; i += 1) {
+        const response = await request(app.getHttpServer()).get('/repo/details/mmayadag/flood');
+        statuses.push(response.status);
+        if (response.status === 429) limited = response;
+      }
+
+      expect(limited?.headers['retry-after']).toMatch(/^\d+$/);
+      expect(limited?.body.message).toBe('Too many requests, please try again later');
+      expect(statuses.filter((status) => status === 404).length).toBeLessThanOrEqual(10);
+    });
+
+    it('separates clients forwarded by the proxy', async () => {
+      github.repositoryExists.mockResolvedValue(false);
+
+      await request(app.getHttpServer())
+        .get('/repo/details/mmayadag/flood')
+        .set('X-Forwarded-For', '198.51.100.7')
+        .expect(404);
+    });
+
+    it('never limits the health check', async () => {
+      for (let i = 0; i < 70; i += 1) {
+        await request(app.getHttpServer()).get('/health').expect(200);
+      }
+    });
+  });
 });
