@@ -49,6 +49,10 @@ Every email links to the UI (`PUBLIC_URL/?confirm=<token>` and `PUBLIC_URL/?unsu
 
 An hourly job (`@nestjs/schedule`) emails every active subscription whose period has elapsed, so a report arrives within an hour of being due. A repository that fails (deleted, made private, no `package.json`) is logged and retried on the next run without blocking the others, and overlapping runs are skipped. Nothing is sent while SendGrid is not configured.
 
+### Security headers
+
+[helmet](https://helmetjs.github.io/) sets its default headers on every API response (CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, HSTS, no `X-Powered-By`). The UI container adds its own set for the static bundle in `ui/Caddyfile`.
+
 ### Rate limiting
 
 A global guard limits each client IP per route with a fixed one-minute window: 10 requests for `details`, `schedule` and `DELETE subscriptions` (they call GitHub and npm or touch subscriptions), 60 for everything else. `/health` is never limited. Responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`; a rejected request gets `429` with `Retry-After`.

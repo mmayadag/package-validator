@@ -1,7 +1,8 @@
 :80 {
 	encode gzip
 
-	# API calls are same-origin; forward them to the NestJS container.
+	# API calls are same-origin; forward them to the NestJS container, which
+	# sets its own security headers (helmet).
 	# handle blocks are mutually exclusive, so try_files below can't rewrite these.
 	handle /repo/* {
 		reverse_proxy api:3288
@@ -10,6 +11,17 @@
 	# Svelte bundle and static assets
 	handle {
 		root * /srv
+		header {
+			# The bundle is self-hosted; the API is same-origin.
+			Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+			# Only honoured over HTTPS, i.e. behind a TLS-terminating proxy.
+			Strict-Transport-Security "max-age=31536000; includeSubDomains"
+			X-Content-Type-Options nosniff
+			X-Frame-Options DENY
+			Referrer-Policy strict-origin-when-cross-origin
+			Permissions-Policy "camera=(), microphone=(), geolocation=()"
+			-Server
+		}
 		try_files {path} /index.html
 		file_server
 	}

@@ -47,6 +47,15 @@ describe('API (e2e)', () => {
 
   it('GET /health', () => request(app.getHttpServer()).get('/health').expect(200, { status: 'ok' }));
 
+  it('sends security headers on every response', async () => {
+    const { headers } = await request(app.getHttpServer()).get('/health').expect(200);
+
+    expect(headers['x-content-type-options']).toBe('nosniff');
+    expect(headers['content-security-policy']).toContain("default-src 'self'");
+    expect(headers['x-frame-options']).toBe('SAMEORIGIN');
+    expect(headers['x-powered-by']).toBeUndefined();
+  });
+
   it('registers the hourly report delivery job', () => {
     const job = moduleRef.get(SchedulerRegistry).getCronJob('send-due-reports');
 
