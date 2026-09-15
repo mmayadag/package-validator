@@ -16,7 +16,7 @@ RUN yarn install --frozen-lockfile --production && yarn cache clean
 COPY --from=build /app/dist ./dist
 COPY public ./public
 COPY views ./views
-RUN mkdir -p tmp
+RUN mkdir -p tmp && chown node:node tmp
 EXPOSE 3288
 USER node
 CMD ["node", "dist/main"]
