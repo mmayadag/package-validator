@@ -11,6 +11,10 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       prefix-development: "chore(deps-dev)"
+    ignore:
+      # TypeScript 7.0 ships only tsc; the compiler API the toolchain needs returns in 7.1
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       nestjs:
         patterns: ["@nestjs/*"]
@@ -26,6 +30,10 @@ updates:
     labels: ["type: chore", "area: ui"]
     commit-message:
       prefix: "chore(deps-dev)"
+    ignore:
+      # TypeScript 7.0 ships only tsc; the compiler API the toolchain needs returns in 7.1
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       ui-tooling:
         patterns: ["*"]
