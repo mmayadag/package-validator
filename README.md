@@ -1,6 +1,7 @@
 # Package Validator
 
 [![CI](https://github.com/mmayadag/package-validator/actions/workflows/ci.yml/badge.svg)](https://github.com/mmayadag/package-validator/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/mmayadag/package-validator/actions/workflows/codeql.yml/badge.svg)](https://github.com/mmayadag/package-validator/actions/workflows/codeql.yml)
 [![Architecture](https://img.shields.io/badge/architecture-diagram-0b63ce)](https://mmayadag.github.io/package-validator/)
 ![Node](https://img.shields.io/badge/node-24.15%2B-339933?logo=nodedotjs&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
@@ -91,7 +92,7 @@ Copy [`.env.example`](.env.example) to `.env`. Only `TOKEN` is required; the rep
 
 ## Contributing
 
-Work is tracked as issues on the [project board](https://github.com/users/mmayadag/projects/5). Commits follow [Conventional Commits](https://www.conventionalcommits.org/) with the issue number as the scope, for example `feat(#4): restructure the API into modules`. [Dependabot](.github/dependabot.yml) opens grouped update pull requests every Monday for both apps, GitHub Actions and the Docker base images. See [`SECURITY.md`](SECURITY.md) for reporting vulnerabilities.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Work is tracked as issues on the [project board](https://github.com/users/mmayadag/projects/5); commits follow [Conventional Commits](https://www.conventionalcommits.org/) with the issue number as the scope, for example `feat(#4): restructure the API into modules`. [CodeQL](.github/workflows/codeql.yml) scans every push and pull request. [Dependabot](.github/dependabot.yml) opens grouped update pull requests every Monday for both apps, GitHub Actions and the Docker base images. See [`SECURITY.md`](SECURITY.md) for reporting vulnerabilities.
 
 ## History
 
