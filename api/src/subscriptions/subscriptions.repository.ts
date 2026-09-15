@@ -44,6 +44,7 @@ export class SubscriptionsRepository implements OnModuleDestroy {
   private readonly upsertStatement: StatementSync;
   private readonly findStatement: StatementSync;
   private readonly markSentStatement: StatementSync;
+  private readonly deleteByTokenStatement: StatementSync;
 
   constructor(config: ConfigService<AppConfig, true>) {
     const path = config.get('databasePath', { infer: true });
@@ -65,6 +66,7 @@ export class SubscriptionsRepository implements OnModuleDestroy {
       'SELECT * FROM subscriptions WHERE owner = :owner AND repo = :repo AND email = :email',
     );
     this.markSentStatement = this.db.prepare('UPDATE subscriptions SET last_sent_at = :at WHERE id = :id');
+    this.deleteByTokenStatement = this.db.prepare('DELETE FROM subscriptions WHERE token = :token');
   }
 
   /** Creates the subscription, or updates the period of an existing one and keeps its token. */
@@ -84,6 +86,11 @@ export class SubscriptionsRepository implements OnModuleDestroy {
 
   markSent(id: number, at = Date.now()): void {
     this.markSentStatement.run({ id, at });
+  }
+
+  /** Returns whether a subscription with this token existed. */
+  deleteByToken(token: string): boolean {
+    return Number(this.deleteByTokenStatement.run({ token }).changes) > 0;
   }
 
   onModuleDestroy(): void {

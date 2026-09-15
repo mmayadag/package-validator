@@ -1,5 +1,9 @@
 <script lang="ts">
   import RepositoryCheck from './components/RepositoryCheck.svelte';
+  import Unsubscribe from './components/Unsubscribe.svelte';
+
+  // Report emails link to /?unsubscribe=<token>
+  const unsubscribeToken = new URLSearchParams(window.location.search).get('unsubscribe');
 </script>
 
 <div class="page">
@@ -17,7 +21,11 @@
   </header>
 
   <main>
-    <RepositoryCheck />
+    {#if unsubscribeToken}
+      <Unsubscribe token={unsubscribeToken} />
+    {:else}
+      <RepositoryCheck />
+    {/if}
   </main>
 
   <footer>

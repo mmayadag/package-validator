@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, isValidRepository, scheduleReport } from './api';
+import { ApiError, isValidRepository, scheduleReport, unsubscribe } from './api';
 
 const respond = (status: number, body: unknown) =>
   vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status }));
@@ -33,5 +33,18 @@ describe('api client', () => {
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status: 400, message: 'email must be an email' });
+  });
+
+  it('deletes a subscription by token and accepts an empty 204 response', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }));
+
+    await expect(unsubscribe('abc_DEF-123')).resolves.toBeUndefined();
+    expect(fetch).toHaveBeenCalledWith('/repo/subscriptions/abc_DEF-123', expect.objectContaining({ method: 'DELETE' }));
+  });
+
+  it('reports an unknown unsubscribe token as a 404 ApiError', async () => {
+    respond(404, { message: 'Subscription not found or already removed', statusCode: 404 });
+
+    await expect(unsubscribe('gone')).rejects.toMatchObject({ status: 404 });
   });
 });

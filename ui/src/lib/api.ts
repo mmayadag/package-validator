@@ -9,10 +9,17 @@ export interface OutdatedDependency {
   latest: string;
 }
 
+export interface SubscriptionSummary {
+  periodHours: ReportPeriod;
+  /** ISO timestamp; null until the first report has been emailed. */
+  nextReportAt: string | null;
+}
+
 export interface ScheduledReport extends RepositoryRef {
   outdated: Record<string, OutdatedDependency[]>;
   text: string;
   emailSent: boolean;
+  subscription: SubscriptionSummary;
 }
 
 export class ApiError extends Error {
@@ -56,4 +63,8 @@ export async function isValidRepository({ owner, repo }: RepositoryRef, signal?:
 
 export function scheduleReport(body: RepositoryRef & { email: string; period: ReportPeriod }): Promise<ScheduledReport> {
   return request<ScheduledReport>('/repo/schedule', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function unsubscribe(token: string): Promise<void> {
+  await request<null>(`/repo/subscriptions/${encodeURIComponent(token)}`, { method: 'DELETE' });
 }

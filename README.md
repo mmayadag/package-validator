@@ -59,7 +59,8 @@ cd ui && npm run dev       # http://localhost:5173, /repo proxied to the API
 | `GET` | `/repo/isValid/:owner/:repo` | | `{ "valid": boolean }` |
 | `POST` | `/repo/isValid` | `{ owner, repo }` | `{ "valid": boolean }` |
 | `GET` | `/repo/details/:owner/:repo` | | Report, `404` unknown repo, `422` no `package.json` |
-| `POST` | `/repo/schedule` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | Report and `emailSent` |
+| `POST` | `/repo/schedule` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | Report, `emailSent` and the stored subscription |
+| `DELETE` | `/repo/subscriptions/:token` | | `204`, `404` unknown token |
 
 Response shapes, status codes and module layout are documented in [`api/README.md`](api/README.md).
 

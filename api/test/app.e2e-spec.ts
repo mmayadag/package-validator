@@ -18,6 +18,7 @@ describe('API (e2e)', () => {
   beforeAll(async () => {
     vi.stubEnv('TOKEN', 'ghp_e2e');
     vi.stubEnv('DATABASE_PATH', ':memory:');
+    vi.stubEnv('PUBLIC_URL', 'https://pv.example.com/');
     moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(GithubService)
       .useValue(github)
@@ -36,6 +37,12 @@ describe('API (e2e)', () => {
   });
 
   beforeEach(() => vi.resetAllMocks());
+
+  const givenValidRepository = () => {
+    github.repositoryExists.mockResolvedValue(true);
+    github.getPackageJson.mockResolvedValue('{}');
+    dependencyChecker.findOutdated.mockResolvedValue({});
+  };
 
   it('GET /health', () => request(app.getHttpServer()).get('/health').expect(200, { status: 'ok' }));
 
@@ -96,12 +103,6 @@ describe('API (e2e)', () => {
   describe('POST /repo/schedule', () => {
     const body = { owner: 'mmayadag', repo: 'app', email: 'dev@example.com', period: 24 };
 
-    const givenValidRepository = () => {
-      github.repositoryExists.mockResolvedValue(true);
-      github.getPackageJson.mockResolvedValue('{}');
-      dependencyChecker.findOutdated.mockResolvedValue({});
-    };
-
     it('returns the report, whether it was emailed and the subscription', async () => {
       givenValidRepository();
       email.sendReport.mockResolvedValue(true);
@@ -115,7 +116,12 @@ describe('API (e2e)', () => {
         subscription: { periodHours: 24, nextReportAt: expect.any(String) },
       });
       expect(response.body.subscription).not.toHaveProperty('token');
-      expect(email.sendReport).toHaveBeenCalledWith('dev@example.com', { owner: 'mmayadag', repo: 'app' }, expect.anything());
+      expect(email.sendReport).toHaveBeenCalledWith(
+        'dev@example.com',
+        { owner: 'mmayadag', repo: 'app' },
+        expect.anything(),
+        expect.stringMatching(/^https:\/\/pv\.example\.com\/\?unsubscribe=[A-Za-z0-9_-]{32}$/),
+      );
     });
 
     it('keeps one subscription per email and repository', async () => {
@@ -138,5 +144,30 @@ describe('API (e2e)', () => {
         .send({ ...body, ...override })
         .expect(400);
     });
+  });
+
+  describe('DELETE /repo/subscriptions/:token', () => {
+    it('unsubscribes with the token from the email link', async () => {
+      givenValidRepository();
+      email.sendReport.mockResolvedValue(true);
+      const subscription = { owner: 'mmayadag', repo: 'unsubscribe-me', email: 'dev@example.com' };
+
+      await request(app.getHttpServer())
+        .post('/repo/schedule')
+        .send({ ...subscription, period: 6 })
+        .expect(200);
+      const link = new URL(email.sendReport.mock.calls[0][3] as string);
+      const token = link.searchParams.get('unsubscribe');
+
+      await request(app.getHttpServer()).delete(`/repo/subscriptions/${token}`).expect(204);
+      expect(moduleRef.get(SubscriptionsRepository).find(subscription)).toBeNull();
+      await request(app.getHttpServer()).delete(`/repo/subscriptions/${token}`).expect(404);
+    });
+
+    it('returns 404 for an unknown token', () =>
+      request(app.getHttpServer()).delete(`/repo/subscriptions/${'a'.repeat(32)}`).expect(404));
+
+    it('rejects a malformed token', () =>
+      request(app.getHttpServer()).delete('/repo/subscriptions/not-a-token').expect(400));
   });
 });

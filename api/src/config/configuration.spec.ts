@@ -5,6 +5,7 @@ describe('loadConfig', () => {
     expect(loadConfig({ TOKEN: 'ghp_test' })).toEqual({
       port: 3288,
       corsOrigin: undefined,
+      publicUrl: 'http://localhost:8080',
       databasePath: 'data/package-validator.db',
       github: { endpoint: 'https://api.github.com/graphql', token: 'ghp_test' },
       email: { apiKey: undefined, from: undefined, subject: 'Dependency report' },

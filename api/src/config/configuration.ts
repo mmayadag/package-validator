@@ -16,6 +16,8 @@ import {
 export interface AppConfig {
   port: number;
   corsOrigin?: string;
+  /** Address of the UI, used for links in emails. No trailing slash. */
+  publicUrl: string;
   databasePath: string;
   github: {
     endpoint: string;
@@ -38,6 +40,10 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   CORS_ORIGIN?: string;
+
+  @IsOptional()
+  @IsUrl({ require_tld: false, require_protocol: true })
+  PUBLIC_URL?: string;
 
   @IsOptional()
   @IsString()
@@ -83,6 +89,7 @@ export function loadConfig(env: Record<string, unknown>): AppConfig {
   return {
     port: vars.PORT ?? 3288,
     corsOrigin: vars.CORS_ORIGIN,
+    publicUrl: (vars.PUBLIC_URL ?? 'http://localhost:8080').replace(/\/+$/, ''),
     databasePath: vars.DATABASE_PATH ?? 'data/package-validator.db',
     github: {
       endpoint: vars.GITHUB_ENDPOINT ?? 'https://api.github.com/graphql',

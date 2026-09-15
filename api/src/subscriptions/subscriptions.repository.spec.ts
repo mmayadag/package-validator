@@ -48,4 +48,12 @@ describe('SubscriptionsRepository', () => {
   it('returns null for an unknown subscription', () => {
     expect(repository.find(input)).toBeNull();
   });
+
+  it('deletes a subscription by its token', () => {
+    const { token } = repository.upsert(input);
+
+    expect(repository.deleteByToken(token)).toBe(true);
+    expect(repository.find(input)).toBeNull();
+    expect(repository.deleteByToken(token)).toBe(false);
+  });
 });

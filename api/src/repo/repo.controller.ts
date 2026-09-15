@@ -1,6 +1,7 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import { RepositoryRefDto } from './dto/repository-ref.dto.js';
 import { ScheduleReportDto } from './dto/schedule-report.dto.js';
+import { UnsubscribeTokenDto } from './dto/unsubscribe-token.dto.js';
 import { type RepoReport, RepoService, type ScheduledReport } from './repo.service.js';
 
 interface ValidityResponse {
@@ -31,5 +32,11 @@ export class RepoController {
   @HttpCode(HttpStatus.OK)
   schedule(@Body() { owner, repo, email, period }: ScheduleReportDto): Promise<ScheduledReport> {
     return this.repoService.subscribe({ owner, repo, email, period });
+  }
+
+  @Delete('subscriptions/:token')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  unsubscribe(@Param() { token }: UnsubscribeTokenDto): void {
+    this.repoService.unsubscribe(token);
   }
 }

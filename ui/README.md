@@ -11,7 +11,8 @@ src/
 ├── App.svelte                   # page layout
 ├── components/
 │   ├── RepositoryCheck.svelte   # form: repository, email, period
-│   └── ReportTable.svelte       # outdated dependencies per section
+│   ├── ReportTable.svelte       # outdated dependencies per section
+│   └── Unsubscribe.svelte       # confirmation page for /?unsubscribe=<token>
 └── lib/
     ├── api.ts                   # typed client for the API
     └── git-url.ts               # owner/repo, HTTPS and SSH GitHub URLs

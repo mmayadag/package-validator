@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { AppConfig } from '../config/configuration.js';
 import {
   DependencyCheckerService,
   type OutdatedDependencies,
@@ -8,6 +10,7 @@ import { EmailService } from '../email/email.service.js';
 import { GithubService, type RepositoryRef } from '../github/github.service.js';
 import { type RenderedReport, renderReport } from '../report/render-report.js';
 import { HOUR_MS, SubscriptionsRepository } from '../subscriptions/subscriptions.repository.js';
+import { unsubscribeUrl } from '../subscriptions/unsubscribe-url.js';
 
 export interface RepoReport extends RenderedReport, RepositoryRef {
   outdated: OutdatedDependencies;
@@ -29,12 +32,17 @@ export interface ScheduledReport extends RepoReport {
 
 @Injectable()
 export class RepoService {
+  private readonly publicUrl: string;
+
   constructor(
     private readonly github: GithubService,
     private readonly dependencyChecker: DependencyCheckerService,
     private readonly email: EmailService,
     private readonly subscriptions: SubscriptionsRepository,
-  ) {}
+    config: ConfigService<AppConfig, true>,
+  ) {
+    this.publicUrl = config.get('publicUrl', { infer: true });
+  }
 
   isValid(ref: RepositoryRef): Promise<boolean> {
     return this.github.repositoryExists(ref);
@@ -62,7 +70,12 @@ export class RepoService {
     const report = await this.buildReport(ref);
     const subscription = this.subscriptions.upsert({ ...ref, email, periodHours: period });
 
-    const emailSent = await this.email.sendReport(email, ref, report);
+    const emailSent = await this.email.sendReport(
+      email,
+      ref,
+      report,
+      unsubscribeUrl(this.publicUrl, subscription.token),
+    );
     const now = Date.now();
     if (emailSent) {
       this.subscriptions.markSent(subscription.id, now);
@@ -76,6 +89,12 @@ export class RepoService {
         nextReportAt: emailSent ? new Date(now + subscription.periodHours * HOUR_MS).toISOString() : null,
       },
     };
+  }
+
+  unsubscribe(token: string): void {
+    if (!this.subscriptions.deleteByToken(token)) {
+      throw new NotFoundException('Subscription not found or already removed');
+    }
   }
 }
 

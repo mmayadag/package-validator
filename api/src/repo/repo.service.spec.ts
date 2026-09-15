@@ -1,4 +1,5 @@
 import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { DependencyCheckerService } from '../dependencies/dependency-checker.service.js';
 import { EmailService } from '../email/email.service.js';
@@ -12,7 +13,7 @@ describe('RepoService', () => {
   const github = { repositoryExists: vi.fn(), getPackageJson: vi.fn() };
   const dependencyChecker = { findOutdated: vi.fn() };
   const email = { sendReport: vi.fn() };
-  const subscriptions = { upsert: vi.fn(), markSent: vi.fn() };
+  const subscriptions = { upsert: vi.fn(), markSent: vi.fn(), deleteByToken: vi.fn() };
   let service: RepoService;
 
   beforeEach(async () => {
@@ -24,6 +25,7 @@ describe('RepoService', () => {
         { provide: DependencyCheckerService, useValue: dependencyChecker },
         { provide: EmailService, useValue: email },
         { provide: SubscriptionsRepository, useValue: subscriptions },
+        { provide: ConfigService, useValue: { get: () => 'https://pv.example.com' } },
       ],
     }).compile();
     service = moduleRef.get(RepoService);
@@ -75,17 +77,22 @@ describe('RepoService', () => {
     const request = { ...ref, email: 'dev@example.com', period: 12 };
 
     beforeEach(() => {
-      subscriptions.upsert.mockReturnValue({ id: 7, periodHours: 12 });
+      subscriptions.upsert.mockReturnValue({ id: 7, periodHours: 12, token: 'secret-token' });
     });
 
-    it('stores the subscription and records the first delivery', async () => {
+    it('stores the subscription and emails the report with an unsubscribe link', async () => {
       givenRepositoryWithPackageJson();
       email.sendReport.mockResolvedValue(true);
 
       const result = await service.subscribe(request);
 
       expect(subscriptions.upsert).toHaveBeenCalledWith({ ...ref, email: 'dev@example.com', periodHours: 12 });
-      expect(email.sendReport).toHaveBeenCalledWith('dev@example.com', ref, expect.objectContaining({ text: expect.any(String) }));
+      expect(email.sendReport).toHaveBeenCalledWith(
+        'dev@example.com',
+        ref,
+        expect.objectContaining({ text: expect.any(String) }),
+        'https://pv.example.com/?unsubscribe=secret-token',
+      );
       expect(subscriptions.markSent).toHaveBeenCalledWith(7, expect.any(Number));
       expect(result.emailSent).toBe(true);
       expect(result.subscription.periodHours).toBe(12);
@@ -107,6 +114,22 @@ describe('RepoService', () => {
 
       await expect(service.subscribe(request)).rejects.toBeInstanceOf(NotFoundException);
       expect(subscriptions.upsert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('unsubscribe', () => {
+    it('deletes the subscription', () => {
+      subscriptions.deleteByToken.mockReturnValue(true);
+
+      service.unsubscribe('secret-token');
+
+      expect(subscriptions.deleteByToken).toHaveBeenCalledWith('secret-token');
+    });
+
+    it('rejects an unknown token', () => {
+      subscriptions.deleteByToken.mockReturnValue(false);
+
+      expect(() => service.unsubscribe('unknown')).toThrow(NotFoundException);
     });
   });
 });
