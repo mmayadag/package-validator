@@ -8,6 +8,11 @@
 		reverse_proxy api:3288
 	}
 
+	# Swagger UI and the OpenAPI document
+	handle /docs* {
+		reverse_proxy api:3288
+	}
+
 	# Svelte bundle and static assets
 	handle {
 		root * /srv

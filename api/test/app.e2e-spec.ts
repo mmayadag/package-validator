@@ -47,11 +47,39 @@ describe('API (e2e)', () => {
 
   it('GET /health', () => request(app.getHttpServer()).get('/health').expect(200, { status: 'ok' }));
 
+  describe('OpenAPI', () => {
+    it('serves the document with every route', async () => {
+      const { body } = await request(app.getHttpServer()).get('/docs/openapi.json').expect(200);
+
+      expect(body.info.title).toBe('Package Validator API');
+      expect(Object.keys(body.paths).sort()).toEqual([
+        '/health',
+        '/repo/details/{owner}/{repo}',
+        '/repo/isValid',
+        '/repo/isValid/{owner}/{repo}',
+        '/repo/schedule',
+        '/repo/subscriptions/{token}',
+        '/repo/subscriptions/{token}/confirm',
+      ]);
+      expect(body.components.schemas.ScheduledReportDto.properties.subscription).toBeDefined();
+      expect(body.paths['/repo/schedule'].post.tags).toEqual(['subscriptions']);
+      expect(body.paths['/repo/details/{owner}/{repo}'].get.tags).toEqual(['repositories']);
+    });
+
+    it('serves Swagger UI with a CSP that allows its inline bootstrap', async () => {
+      const { headers } = await request(app.getHttpServer()).get('/docs').expect(200);
+
+      expect(headers['content-type']).toContain('text/html');
+      expect(headers['content-security-policy']).toContain("script-src 'self' 'unsafe-inline'");
+    });
+  });
+
   it('sends security headers on every response', async () => {
     const { headers } = await request(app.getHttpServer()).get('/health').expect(200);
 
     expect(headers['x-content-type-options']).toBe('nosniff');
     expect(headers['content-security-policy']).toContain("default-src 'self'");
+    expect(headers['content-security-policy']).toContain("script-src 'self';");
     expect(headers['x-frame-options']).toBe('SAMEORIGIN');
     expect(headers['x-powered-by']).toBeUndefined();
   });

@@ -17,6 +17,8 @@ NestJS service that reads a public repository's `package.json` through the GitHu
 
 ## Endpoints
 
+Interactive documentation (Swagger UI) is served at [`/docs`](http://localhost:3288/docs) and the OpenAPI 3 document at `/docs/openapi.json`; both are generated from the DTO decorators at startup. In Docker they are reachable through the UI container at http://localhost:8080/docs.
+
 | Method | Path | Body | Success | Errors |
 |---|---|---|---|---|
 | `GET` | `/health` | | `200 { status: "ok" }` | |

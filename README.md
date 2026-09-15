@@ -63,7 +63,7 @@ cd ui && npm run dev       # http://localhost:5173, /repo proxied to the API
 | `POST` | `/repo/subscriptions/:token/confirm` | | Activates the subscription and sends the first report |
 | `DELETE` | `/repo/subscriptions/:token` | | `204`, `404` unknown token |
 
-Response shapes, status codes and module layout are documented in [`api/README.md`](api/README.md).
+Swagger UI is served at `/docs` (http://localhost:8080/docs with Docker) and the OpenAPI document at `/docs/openapi.json`. Response shapes, status codes and module layout are documented in [`api/README.md`](api/README.md).
 
 ## Configuration
 

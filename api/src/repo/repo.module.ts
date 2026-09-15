@@ -6,10 +6,11 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
 import { ReportSchedulerService } from './report-scheduler.service.js';
 import { RepoController } from './repo.controller.js';
 import { RepoService } from './repo.service.js';
+import { SubscriptionsController } from './subscriptions.controller.js';
 
 @Module({
   imports: [GithubModule, DependenciesModule, EmailModule, SubscriptionsModule],
-  controllers: [RepoController],
+  controllers: [RepoController, SubscriptionsController],
   providers: [RepoService, ReportSchedulerService],
 })
 export class RepoModule {}
