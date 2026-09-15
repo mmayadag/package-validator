@@ -5,7 +5,7 @@
 ![Node](https://img.shields.io/badge/node-24.15%2B-339933?logo=nodedotjs&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-Point it at a public GitHub repository and get a report of which `package.json` dependencies have newer versions on npm, in the browser and by email.
+Point it at a public GitHub repository and get a report of which `package.json` dependencies have newer versions on npm, in the browser and by email every 6, 12 or 24 hours.
 
 ## Architecture
 

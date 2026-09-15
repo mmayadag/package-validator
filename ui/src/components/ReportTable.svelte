@@ -12,7 +12,9 @@
     <h2 id="report-title">{report.owner}/{report.repo}</h2>
     <p>
       {total === 0 ? 'All dependencies are up to date.' : `${total} outdated ${total === 1 ? 'dependency' : 'dependencies'}.`}
-      {report.emailSent ? 'The report was emailed to you.' : 'Email delivery is not configured on this server.'}
+      {report.emailSent
+        ? `The report was emailed to you and will arrive every ${report.subscription.periodHours} hours.`
+        : 'Email delivery is not configured on this server.'}
     </p>
   </header>
 

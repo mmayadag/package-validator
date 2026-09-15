@@ -45,6 +45,18 @@ describe('SubscriptionsRepository', () => {
     expect(repository.find(input)?.lastSentAt).toBe(5_000);
   });
 
+  it('finds subscriptions that were never delivered or whose period has elapsed', () => {
+    const due = repository.upsert({ ...input, repo: 'due', periodHours: 6 });
+    const fresh = repository.upsert({ ...input, repo: 'fresh', periodHours: 24 });
+    repository.upsert({ ...input, repo: 'never-sent' });
+    repository.markSent(due.id, 0);
+    repository.markSent(fresh.id, 0);
+
+    const sixHoursLater = 6 * 3_600_000;
+
+    expect(repository.findDue(sixHoursLater).map(({ repo }) => repo)).toEqual(['due', 'never-sent']);
+  });
+
   it('returns null for an unknown subscription', () => {
     expect(repository.find(input)).toBeNull();
   });

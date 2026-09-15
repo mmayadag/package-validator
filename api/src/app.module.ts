@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { loadConfig } from './config/configuration.js';
 import { HealthController } from './health/health.controller.js';
 import { RepoModule } from './repo/repo.module.js';
@@ -13,6 +14,7 @@ import { RepoModule } from './repo/repo.module.js';
       envFilePath: ['.env', '../.env'],
       load: [() => loadConfig(process.env)],
     }),
+    ScheduleModule.forRoot(),
     RepoModule,
   ],
   controllers: [HealthController],

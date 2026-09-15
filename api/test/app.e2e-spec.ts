@@ -1,4 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
+import { CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { Test, type TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
@@ -45,6 +46,12 @@ describe('API (e2e)', () => {
   };
 
   it('GET /health', () => request(app.getHttpServer()).get('/health').expect(200, { status: 'ok' }));
+
+  it('registers the hourly report delivery job', () => {
+    const job = moduleRef.get(SchedulerRegistry).getCronJob('send-due-reports');
+
+    expect(job.cronTime.source).toBe(CronExpression.EVERY_HOUR);
+  });
 
   describe('isValid', () => {
     it('GET /repo/isValid/:owner/:repo', async () => {

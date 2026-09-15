@@ -46,6 +46,8 @@ A report looks like this:
 
 Every email links to `PUBLIC_URL/?unsubscribe=<token>`. The UI asks for confirmation and then calls `DELETE /repo/subscriptions/:token`, so mail scanners that follow links cannot unsubscribe anyone. The token is never returned by the API.
 
+An hourly job (`@nestjs/schedule`) emails every subscription whose period has elapsed, so a report arrives within an hour of being due. A repository that fails (deleted, made private, no `package.json`) is logged and retried on the next run without blocking the others, and overlapping runs are skipped. Nothing is sent while SendGrid is not configured.
+
 ## Configuration
 
 | Variable | Required | Default | Description |

@@ -43,6 +43,7 @@ export class SubscriptionsRepository implements OnModuleDestroy {
   private readonly db: DatabaseSync;
   private readonly upsertStatement: StatementSync;
   private readonly findStatement: StatementSync;
+  private readonly findDueStatement: StatementSync;
   private readonly markSentStatement: StatementSync;
   private readonly deleteByTokenStatement: StatementSync;
 
@@ -65,6 +66,11 @@ export class SubscriptionsRepository implements OnModuleDestroy {
     this.findStatement = this.db.prepare(
       'SELECT * FROM subscriptions WHERE owner = :owner AND repo = :repo AND email = :email',
     );
+    this.findDueStatement = this.db.prepare(`
+      SELECT * FROM subscriptions
+      WHERE last_sent_at IS NULL OR last_sent_at + period_hours * ${HOUR_MS} <= :now
+      ORDER BY id
+    `);
     this.markSentStatement = this.db.prepare('UPDATE subscriptions SET last_sent_at = :at WHERE id = :id');
     this.deleteByTokenStatement = this.db.prepare('DELETE FROM subscriptions WHERE token = :token');
   }
@@ -82,6 +88,11 @@ export class SubscriptionsRepository implements OnModuleDestroy {
   find({ owner, repo, email }: SubscriptionKey): Subscription | null {
     const row = this.findStatement.get({ owner, repo, email });
     return row ? toSubscription(row) : null;
+  }
+
+  /** Subscriptions that have never been delivered or whose period has elapsed. */
+  findDue(now = Date.now()): Subscription[] {
+    return this.findDueStatement.all({ now }).map(toSubscription);
   }
 
   markSent(id: number, at = Date.now()): void {
