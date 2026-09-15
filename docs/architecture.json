@@ -7,36 +7,38 @@
     "viewBox": [1120, 580],
     "views": [
       { "id": "request-path", "label": "Request path", "focus": ["browser", "caddy", "api", "github", "checker", "registry"], "note": "Follow a validation request from the browser through the API to GitHub and the npm registry." },
-      { "id": "email-report", "label": "Email report", "focus": ["api", "mailer", "sendgrid"], "note": "The report is emailed only when SENDGRID_API_KEY is configured." }
+      { "id": "scheduled-delivery", "label": "Scheduled delivery", "focus": ["api", "store", "checker", "mailer", "sendgrid"], "note": "An hourly job reads due subscriptions from SQLite, rebuilds each report and emails it." }
     ]
   },
   "components": [
     { "id": "browser", "type": "external", "label": "Browser", "sublabel": "Svelte 5 SPA", "pos": [40, 300], "size": [130, 60] },
+    { "id": "store", "type": "database", "label": "SQLite", "sublabel": "subscriptions", "pos": [260, 150], "size": [140, 60], "tag": "api-data volume" },
     { "id": "caddy", "type": "frontend", "label": "Caddy", "sublabel": "ui container :80", "pos": [260, 300], "size": [140, 60] },
     { "id": "bundle", "type": "frontend", "label": "Static bundle", "sublabel": "Vite build", "pos": [260, 450], "size": [140, 60] },
-    { "id": "api", "type": "backend", "label": "NestJS API", "sublabel": "api container :3288", "pos": [490, 300], "size": [150, 60], "tag": "GET /health" },
+    { "id": "api", "type": "backend", "label": "NestJS API", "sublabel": "api container :3288", "pos": [490, 300], "size": [150, 60], "tag": "rate limited" },
     { "id": "checker", "type": "backend", "label": "Dependency checker", "sublabel": "npm-check-updates", "pos": [720, 300], "size": [160, 60] },
-    { "id": "mailer", "type": "backend", "label": "Report mailer", "sublabel": "optional", "pos": [720, 450], "size": [160, 60] },
+    { "id": "mailer", "type": "backend", "label": "Report mailer", "sublabel": "hourly schedule", "pos": [720, 450], "size": [160, 60] },
     { "id": "github", "type": "external", "label": "GitHub GraphQL", "sublabel": "repo + package.json", "pos": [950, 150], "size": [150, 60] },
     { "id": "registry", "type": "external", "label": "npm registry", "sublabel": "latest versions", "pos": [950, 300], "size": [150, 60] },
     { "id": "sendgrid", "type": "external", "label": "SendGrid", "sublabel": "email delivery", "pos": [950, 450], "size": [150, 60] }
   ],
   "boundaries": [
-    { "kind": "region", "label": "docker compose", "wraps": ["caddy", "bundle", "api", "checker", "mailer"] }
+    { "kind": "region", "label": "docker compose", "wraps": ["store", "caddy", "bundle", "api", "checker", "mailer"] }
   ],
   "connections": [
     { "id": "browser-to-caddy", "from": "browser", "to": "caddy", "label": "HTTP :8080", "variant": "emphasis" },
     { "id": "caddy-to-bundle", "from": "caddy", "to": "bundle", "label": "SPA files", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelDy": 24 },
     { "id": "caddy-to-api", "from": "caddy", "to": "api", "label": "/repo/*", "variant": "emphasis" },
+    { "id": "api-to-store", "from": "api", "to": "store", "label": "subscriptions", "fromSide": "top", "toSide": "right" },
     { "id": "api-to-github", "from": "api", "to": "github", "label": "GraphQL", "fromSide": "top", "toSide": "left" },
     { "id": "api-to-checker", "from": "api", "to": "checker", "label": "package.json" },
     { "id": "checker-to-registry", "from": "checker", "to": "registry", "label": "versions" },
-    { "id": "api-to-mailer", "from": "api", "to": "mailer", "label": "report", "variant": "dashed", "fromSide": "bottom", "toSide": "left" },
+    { "id": "api-to-mailer", "from": "api", "to": "mailer", "label": "due reports", "variant": "dashed", "fromSide": "bottom", "toSide": "left" },
     { "id": "mailer-to-sendgrid", "from": "mailer", "to": "sendgrid", "label": "HTTPS", "variant": "dashed" }
   ],
   "cards": [
     { "dot": "cyan", "title": "Edge", "items": ["Caddy serves the SPA and proxies /repo/* to the API", "Same origin, so no CORS configuration"] },
-    { "dot": "emerald", "title": "API", "items": ["NestJS modules: repo, github, dependencies, report, email, health", "Reads package.json from the default branch without temp files"] },
-    { "dot": "violet", "title": "External services", "items": ["GitHub token required", "SendGrid optional; email is skipped without a key"] }
+    { "dot": "emerald", "title": "API", "items": ["Per-IP rate limits; package.json is checked in memory", "Subscriptions in SQLite; an hourly job emails due reports"] },
+    { "dot": "violet", "title": "External services", "items": ["GitHub token required", "SendGrid optional; nothing is emailed without a key"] }
   ]
 }
