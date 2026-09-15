@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { loadConfig } from './config/configuration.js';
+import { HealthController } from './health/health.controller.js';
 import { RepoModule } from './repo/repo.module.js';
 
 @Module({
@@ -14,5 +15,6 @@ import { RepoModule } from './repo/repo.module.js';
     }),
     RepoModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

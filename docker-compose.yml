@@ -11,5 +11,7 @@ services:
     ports:
       - "${UI_PORT:-8080}:80"
     depends_on:
-      - api
+      api:
+        # the api image defines a HEALTHCHECK on GET /health
+        condition: service_healthy
     restart: unless-stopped
