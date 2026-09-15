@@ -5,7 +5,7 @@ import { DependencyCheckerService } from '../dependencies/dependency-checker.ser
 import { EmailService } from '../email/email.service.js';
 import { GithubService } from '../github/github.service.js';
 import { type Subscription, SubscriptionsRepository } from '../subscriptions/subscriptions.repository.js';
-import { RepoService } from './repo.service.js';
+import { REPORT_CACHE_TTL_MS, RepoService } from './repo.service.js';
 
 const ref = { owner: 'mmayadag', repo: 'package-validator' };
 const stored = (overrides: Partial<Subscription> = {}): Subscription => ({
@@ -81,6 +81,42 @@ describe('RepoService', () => {
       github.getPackageJson.mockResolvedValue(raw);
 
       await expect(service.buildReport(ref)).rejects.toThrow('package.json is not valid JSON');
+    });
+
+    describe('cache', () => {
+      beforeEach(() => vi.useFakeTimers());
+      afterEach(() => vi.useRealTimers());
+
+      it('reuses a report for an hour regardless of name casing', async () => {
+        givenRepositoryWithPackageJson();
+
+        const first = await service.buildReport(ref);
+        vi.advanceTimersByTime(REPORT_CACHE_TTL_MS - 1);
+        const second = await service.buildReport({ owner: 'MMayadag', repo: 'Package-Validator' });
+
+        expect(second).toBe(first);
+        expect(github.getPackageJson).toHaveBeenCalledTimes(1);
+        expect(dependencyChecker.findOutdated).toHaveBeenCalledTimes(1);
+        expect(first.generatedAt).toBe(new Date(Date.now() - REPORT_CACHE_TTL_MS + 1).toISOString());
+      });
+
+      it('rebuilds the report once the hour has passed', async () => {
+        givenRepositoryWithPackageJson();
+
+        await service.buildReport(ref);
+        vi.advanceTimersByTime(REPORT_CACHE_TTL_MS);
+        await service.buildReport(ref);
+
+        expect(github.getPackageJson).toHaveBeenCalledTimes(2);
+      });
+
+      it('does not cache failures', async () => {
+        github.repositoryExists.mockResolvedValueOnce(false);
+        await expect(service.buildReport(ref)).rejects.toBeInstanceOf(NotFoundException);
+        givenRepositoryWithPackageJson();
+
+        await expect(service.buildReport(ref)).resolves.toMatchObject(ref);
+      });
     });
   });
 

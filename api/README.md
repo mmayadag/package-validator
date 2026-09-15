@@ -36,10 +36,13 @@ A report looks like this:
   "outdated": {
     "dependencies": [{ "name": "express", "current": "^4.17.1", "latest": "^5.1.0", "change": "major" }]
   },
+  "generatedAt": "2026-09-15T13:00:00.000Z",
   "html": "<table>…</table>",
   "text": "Outdated dependencies of mmayadag/bicycle-in-izmir …"
 }
 ```
+
+A report is cached in memory for one hour per repository, so repeated requests and scheduled deliveries reuse it instead of querying GitHub and the npm registry again; `generatedAt` says when the lookup happened. Failures are never cached.
 
 `change` compares the lowest versions the two ranges allow: `major`, `minor` or `patch`; a minor bump below 1.0.0 counts as `major` because caret ranges treat it as breaking. Tags, URLs and workspace references are `unknown`.
 

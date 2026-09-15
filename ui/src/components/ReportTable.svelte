@@ -6,6 +6,7 @@
   const sections = $derived(Object.entries(report.outdated));
   const total = $derived(sections.reduce((sum, [, packages]) => sum + packages.length, 0));
   const majors = $derived(sections.flatMap(([, packages]) => packages).filter(({ change }) => change === 'major').length);
+  const generated = $derived(new Date(report.generatedAt).toLocaleString());
 </script>
 
 <section class="card" aria-labelledby="report-title">
@@ -25,6 +26,7 @@
         Email delivery is not configured on this server, so the subscription cannot be confirmed.
       {/if}
     </p>
+    <p class="meta">Checked against the npm registry at {generated}.</p>
   </header>
 
   {#each sections as [section, packages] (section)}
@@ -73,6 +75,10 @@
   header p {
     margin: 0.25rem 0 0;
     color: var(--muted);
+  }
+
+  .meta {
+    font-size: 0.8125rem;
   }
 
   .change {

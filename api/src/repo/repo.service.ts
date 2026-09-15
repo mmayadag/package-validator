@@ -14,7 +14,13 @@ import { HOUR_MS, type Subscription, SubscriptionsRepository } from '../subscrip
 
 export interface RepoReport extends RenderedReport, RepositoryRef {
   outdated: OutdatedDependencies;
+  /** ISO timestamp of the registry lookup; a report is reused for up to an hour. */
+  generatedAt: string;
 }
+
+export const REPORT_CACHE_TTL_MS = HOUR_MS;
+/** Upper bound on cached reports; the oldest entry is evicted beyond it. */
+const REPORT_CACHE_MAX_ENTRIES = 500;
 
 export interface SubscriptionRequest extends RepositoryRef {
   email: string;
@@ -43,6 +49,7 @@ export interface ConfirmedSubscription extends RepositoryRef {
 @Injectable()
 export class RepoService {
   private readonly publicUrl: string;
+  private readonly reports = new Map<string, { report: RepoReport; expiresAt: number }>();
 
   constructor(
     private readonly github: GithubService,
@@ -58,8 +65,29 @@ export class RepoService {
     return this.github.repositoryExists(ref);
   }
 
+  /**
+   * Builds the report, reusing one built within the last hour for the same
+   * repository so repeated requests and scheduled deliveries do not hit
+   * GitHub and the npm registry again.
+   */
   async buildReport({ owner, repo }: RepositoryRef): Promise<RepoReport> {
-    const ref = { owner, repo };
+    const key = `${owner}/${repo}`.toLowerCase();
+    const cached = this.reports.get(key);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.report;
+    }
+
+    const report = await this.fetchReport({ owner, repo });
+    this.reports.set(key, { report, expiresAt: Date.now() + REPORT_CACHE_TTL_MS });
+    if (this.reports.size > REPORT_CACHE_MAX_ENTRIES) {
+      const oldest = this.reports.keys().next().value;
+      if (oldest !== undefined) this.reports.delete(oldest);
+    }
+    return report;
+  }
+
+  private async fetchReport(ref: RepositoryRef): Promise<RepoReport> {
+    const { owner, repo } = ref;
 
     if (!(await this.github.repositoryExists(ref))) {
       throw new NotFoundException(`Repository ${owner}/${repo} does not exist or is not public`);
@@ -71,7 +99,7 @@ export class RepoService {
     }
 
     const outdated = await this.dependencyChecker.findOutdated(parseManifest(raw));
-    return { ...ref, outdated, ...renderReport(ref, outdated) };
+    return { ...ref, outdated, generatedAt: new Date().toISOString(), ...renderReport(ref, outdated) };
   }
 
   /**

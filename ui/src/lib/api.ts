@@ -23,6 +23,8 @@ export interface SubscriptionSummary {
 
 export interface ScheduledReport extends RepositoryRef {
   outdated: Record<string, OutdatedDependency[]>;
+  /** When the registry was queried; reports are reused for up to an hour. */
+  generatedAt: string;
   text: string;
   /** Whether a confirmation request or the report itself was emailed. */
   emailSent: boolean;
