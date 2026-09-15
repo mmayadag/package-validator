@@ -12,7 +12,7 @@ NestJS service that reads a public repository's `package.json` through the GitHu
 | `report` | Renders the HTML and plain-text report, escaping every value |
 | `email` | Confirmation requests and reports through SendGrid; a no-op when it is not configured |
 | `subscriptions` | SQLite storage for report subscriptions (`node:sqlite`, no native dependency), with pending/active state |
-| `repo` | HTTP routes and the use cases that tie the modules together |
+| `repo` | HTTP routes (`RepoController`, `SubscriptionsController`) and the use cases that tie the modules together |
 | `health` | `GET /health` liveness probe |
 
 ## Endpoints
@@ -79,6 +79,8 @@ The client address comes from `X-Forwarded-For` when the request arrives from a 
 | `DATABASE_PATH` | no | `data/package-validator.db` | SQLite file for subscriptions (`:memory:` for tests) |
 | `PORT` | no | `3288` | HTTP port |
 | `CORS_ORIGIN` | no | | Comma-separated origins; CORS stays off when unset |
+| `LOG_LEVEL` | no | `log` | Most verbose level to print: `fatal`, `error`, `warn`, `log`, `debug` or `verbose` |
+| `NODE_ENV` | no | | `production` switches logs to one JSON object per line (set by the Docker image) |
 
 Invalid values stop the application at startup. `.env` is read from `api/` and from the repository root.
 
