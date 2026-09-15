@@ -1,65 +1,100 @@
 # Package Validator
 
 [![CI](https://github.com/mmayadag/package-validator/actions/workflows/ci.yml/badge.svg)](https://github.com/mmayadag/package-validator/actions/workflows/ci.yml)
+[![Architecture](https://img.shields.io/badge/architecture-diagram-0b63ce)](https://mmayadag.github.io/package-validator/)
+![Node](https://img.shields.io/badge/node-24.15%2B-339933?logo=nodedotjs&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
-Point it at a public GitHub repository and get a report of which `package.json` dependencies have newer versions. Optionally emails the report on a schedule.
+Point it at a public GitHub repository and get a report of which `package.json` dependencies have newer versions on npm, in the browser and by email.
 
-| Directory | What it is | Stack |
+## Architecture
+
+[![Architecture diagram](https://img.shields.io/badge/open-interactive%20diagram-0b63ce?style=for-the-badge)](https://mmayadag.github.io/package-validator/)
+
+The browser talks to a single origin. Caddy serves the Svelte bundle and proxies `/repo/*` to the NestJS API, which reads `package.json` from GitHub's GraphQL API, checks every dependency against the npm registry and optionally sends the report through SendGrid. The interactive diagram is generated from [`docs/architecture.json`](docs/architecture.json) with [archify](https://github.com/tt-a1i/archify) and published by the [Pages workflow](.github/workflows/pages.yml).
+
+| Directory | Role | Stack |
 |---|---|---|
-| [`api/`](api) | REST API: validates the repo through the GitHub GraphQL API, fetches `package.json` and runs `npm-check-updates` on it | NestJS · TypeScript · SendGrid |
-| [`ui/`](ui) | Single-page front end | Svelte · Rollup |
+| [`api/`](api) | REST API | NestJS 12 · TypeScript 6 (ESM, strict) · graphql-request · npm-check-updates · SendGrid · Vitest |
+| [`ui/`](ui) | Single-page app | Svelte 5 (runes) · TypeScript · Vite |
+| [`docs/`](docs) | Architecture diagram published to GitHub Pages | archify |
 
-Both were separate repositories ([package-validator-api](https://github.com/mmayadag/package-validator-api), [package-validator-ui](https://github.com/mmayadag/package-validator-ui)); they were merged here with `git subtree` so the full history is preserved.
+## Quick start
 
-## Run with Docker
-
-One command builds and starts everything in the background:
+Requires Docker with Compose.
 
 ```bash
-make up
+make up          # creates .env on the first run, then builds and starts the stack
 ```
 
-It creates `.env` from `.env.example` on the first run (set `TOKEN` to a GitHub token, then run `make up` again) and runs `docker compose up -d --build`.
+Set `TOKEN` in `.env` to a GitHub token, run `make up` again and open http://localhost:8080.
 
-| Command | What it does |
+| Command | Description |
 |---|---|
-| `make up` | Build images and start the stack |
+| `make up` | Build the images and start the stack in the background |
 | `make down` | Stop and remove the containers |
-| `make logs` | Follow the logs of both containers |
-| `make ps` | Show container status |
+| `make logs` | Follow the logs |
+| `make ps` | Container status (the UI waits for a healthy API) |
 
 Without `make`: `cp .env.example .env && docker compose up -d --build`.
 
-Open http://localhost:8080. The UI container (Caddy) serves the Svelte bundle and proxies `/repo/*` to the API container, so no CORS configuration is needed. Images are built on `node:26-alpine`.
+## Development
 
-## Run locally
-
-Requires Node.js 24.15+ (or 22.22+ / 26+, the range `npm-check-updates` supports) and Yarn 1.
+Requires Node.js 24.15+ (see [`.nvmrc`](.nvmrc)) and Yarn 1 for the API.
 
 ```bash
-# API — http://localhost:3288
-cd api && yarn install && yarn start:dev
-cd api && yarn test
+make install     # api: yarn install, ui: npm ci
+make lint        # oxlint + tsc for the API, svelte-check for the UI
+make test        # API unit + e2e tests, UI tests
 
-# UI — http://localhost:5000
-cd ui && npm install && npm run dev
+cd api && yarn start:dev   # http://localhost:3288
+cd ui && npm run dev       # http://localhost:5173, /repo proxied to the API
 ```
-
-When running outside Docker the UI calls the API on its own origin; point it at the API with a reverse proxy or by editing `api` in `ui/src/pages/Repo.svelte`.
 
 ## API
 
-| Method | Endpoint | Body | Returns |
+| Method | Path | Body | Response |
 |---|---|---|---|
-| `GET` | `/repo/isValid/:owner/:repo` | — | `{ "valid": boolean }` |
-| `POST` | `/repo/isValid` | `{ "owner", "repo" }` | `{ "valid": boolean }` |
-| `GET` | `/repo/details/:owner/:repo` | — | Outdated dependencies report |
-| `POST` | `/repo/schedule` | `{ "owner", "repo", "email", "period": 6 \| 12 \| 24 }` | Report; emails it when `SENDGRID_API_KEY` is set |
+| `GET` | `/health` | | `{ "status": "ok" }` |
+| `GET` | `/repo/isValid/:owner/:repo` | | `{ "valid": boolean }` |
+| `POST` | `/repo/isValid` | `{ owner, repo }` | `{ "valid": boolean }` |
+| `GET` | `/repo/details/:owner/:repo` | | Report, `404` unknown repo, `422` no `package.json` |
+| `POST` | `/repo/schedule` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | Report and `emailSent` |
+
+Response shapes, status codes and module layout are documented in [`api/README.md`](api/README.md).
 
 ## Configuration
 
-See [`.env.example`](.env.example). `TOKEN` (GitHub) is required; SendGrid variables are optional.
+Copy [`.env.example`](.env.example) to `.env`. Only `TOKEN` is required; the report is emailed when both `SENDGRID_API_KEY` and `EMAIL_FROM` are set. The API validates its environment at startup and refuses to start with invalid values. All variables are listed in [`api/README.md`](api/README.md#configuration).
+
+## Project structure
+
+```
+.
+├── api/                  NestJS API
+│   ├── src/
+│   │   ├── config/       typed, validated environment
+│   │   ├── github/       GraphQL client
+│   │   ├── dependencies/ npm-check-updates wrapper
+│   │   ├── report/       HTML and text rendering
+│   │   ├── email/        SendGrid delivery
+│   │   ├── repo/         routes, DTOs and use case
+│   │   └── health/       liveness probe
+│   └── test/             e2e tests
+├── ui/                   Svelte 5 SPA served by Caddy
+├── docs/                 architecture diagram (GitHub Pages)
+├── docker-compose.yml
+└── Makefile
+```
+
+## Contributing
+
+Work is tracked as issues on the [project board](https://github.com/users/mmayadag/projects/5). Commits follow [Conventional Commits](https://www.conventionalcommits.org/) with the issue number as the scope, for example `feat(#4): restructure the API into modules`. See [`SECURITY.md`](SECURITY.md) for reporting vulnerabilities.
+
+## History
+
+`api/` and `ui/` started as separate repositories ([package-validator-api](https://github.com/mmayadag/package-validator-api), [package-validator-ui](https://github.com/mmayadag/package-validator-ui)) and were merged with `git subtree`, so their full history is preserved.
 
 ## License
 
-MIT
+[MIT](LICENSE)
