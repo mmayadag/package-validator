@@ -2,7 +2,10 @@
   "name": "package-validator-ui",
   "version": "0.1.0",
   "description": "Web front end for Package Validator",
-  "author": "Murat Mayadağ",
+  "author": {
+    "name": "Murat Mayadağ",
+    "url": "https://github.com/mmayadag"
+  },
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -24,5 +27,11 @@
     "typescript": "~6.0.3",
     "vite": "^8.3.0",
     "vitest": "^5.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mmayadag/package-validator.git",
+    "directory": "ui"
+  },
+  "homepage": "https://github.com/mmayadag/package-validator#readme"
 }

@@ -16,7 +16,9 @@ export function setupOpenApi(app: INestApplication): void {
         'Requests are rate limited per client IP; a rejected request gets 429 with Retry-After.',
     )
     .setVersion(version)
+    .setContact('Murat Mayadağ', 'https://github.com/mmayadag', '')
     .setLicense('MIT', 'https://github.com/mmayadag/package-validator/blob/main/LICENSE')
+    .setExternalDoc('Source code and documentation', 'https://github.com/mmayadag/package-validator')
     .addTag('repositories', 'Validate a repository and build its dependency report')
     .addTag('subscriptions', 'Email delivery on a 6, 12 or 24 hour schedule')
     .addTag('health', 'Liveness probe')

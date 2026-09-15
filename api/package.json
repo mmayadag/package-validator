@@ -2,7 +2,10 @@
   "name": "package-validator-api",
   "version": "0.1.0",
   "description": "Reports outdated package.json dependencies of a GitHub repository",
-  "author": "Murat Mayadağ",
+  "author": {
+    "name": "Murat Mayadağ",
+    "url": "https://github.com/mmayadag"
+  },
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -57,5 +60,11 @@
     "unplugin-swc": "^1.6.0",
     "vite": "^8.3.0",
     "vitest": "^5.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mmayadag/package-validator.git",
+    "directory": "api"
+  },
+  "homepage": "https://github.com/mmayadag/package-validator#readme"
 }

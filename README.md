@@ -133,6 +133,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Work is tracked as issues on the [projec
 
 `api/` and `ui/` started as separate repositories ([package-validator-api](https://github.com/mmayadag/package-validator-api), [package-validator-ui](https://github.com/mmayadag/package-validator-ui)) and were merged with `git subtree`, so their full history is preserved.
 
+## Author
+
+**Murat Mayadağ** · [GitHub](https://github.com/mmayadag)
+
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) © Murat Mayadağ
