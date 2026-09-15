@@ -1,27 +1,34 @@
-# package-validator-ui - svelte app
+# Package Validator UI
 
-This is front-end part of package validator build with svelte.
+Single-page front end built with Svelte 5 (runes), TypeScript and Vite.
 
-## Get started
+## Structure
 
-Install the dependencies...
-
-```bash
-npm install
+```
+src/
+├── main.ts                      # mounts the app
+├── app.css                      # design tokens, light and dark
+├── App.svelte                   # page layout
+├── components/
+│   ├── RepositoryCheck.svelte   # form: repository, email, period
+│   └── ReportTable.svelte       # outdated dependencies per section
+└── lib/
+    ├── api.ts                   # typed client for the API
+    └── git-url.ts               # owner/repo, HTTPS and SSH GitHub URLs
 ```
 
-Run dev server ...
-```bash
-npm run dev
-```
-Navigate to [localhost:5000](http://localhost:5000). You should see your app running. Edit a component file in `src`, save it, and reload the page to see your changes.
+The report is rendered from the structured `outdated` data rather than from server-generated HTML.
 
+## Development
 
-## Building and running in production mode
-
-To create an optimised version of the app:
+Requires Node.js 24.15+.
 
 ```bash
-npm run build
+npm ci
+npm run dev       # http://localhost:5173, /repo is proxied to http://localhost:3288
+npm run check     # svelte-check, fails on warnings
+npm test          # Vitest
+npm run build     # dist/
 ```
-You can run the newly built app with `npm run start`. This uses [sirv](https://github.com/lukeed/sirv), which is included in your package.json's `dependencies` so that the app will work when you deploy to platforms like [Heroku](https://heroku.com).
+
+In Docker the bundle is served by Caddy, which also proxies `/repo/*` to the API container (see `Caddyfile`).
