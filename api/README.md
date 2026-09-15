@@ -10,8 +10,8 @@ NestJS service that reads a public repository's `package.json` through the GitHu
 | `github` | GraphQL client: repository lookup and `HEAD:package.json` contents |
 | `dependencies` | Runs `npm-check-updates` on the manifest in memory and groups results by section |
 | `report` | Renders the HTML and plain-text report, escaping every value |
-| `email` | Sends the report with SendGrid, including an unsubscribe link; a no-op when it is not configured |
-| `subscriptions` | SQLite storage for report subscriptions (`node:sqlite`, no native dependency) |
+| `email` | Confirmation requests and reports through SendGrid; a no-op when it is not configured |
+| `subscriptions` | SQLite storage for report subscriptions (`node:sqlite`, no native dependency), with pending/active state |
 | `repo` | HTTP routes and the use cases that tie the modules together |
 | `health` | `GET /health` liveness probe |
 
@@ -24,6 +24,7 @@ NestJS service that reads a public repository's `package.json` through the GitHu
 | `POST` | `/repo/isValid` | `{ owner, repo }` | `200 { valid }` | `400` invalid body |
 | `GET` | `/repo/details/:owner/:repo` | | `200` report | `404` unknown repo, `422` no or invalid `package.json` |
 | `POST` | `/repo/schedule` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | `200` report, `emailSent`, `subscription` | `400`, `404`, `422` |
+| `POST` | `/repo/subscriptions/:token/confirm` | | `200` owner, repo, email, `subscription` | `400` malformed token, `404` unknown or expired |
 | `DELETE` | `/repo/subscriptions/:token` | | `204` | `400` malformed token, `404` unknown token |
 
 A report looks like this:
@@ -42,11 +43,11 @@ A report looks like this:
 
 ### Subscriptions
 
-`POST /repo/schedule` stores one subscription per email and repository (case-insensitive); posting again only changes the period. The response adds `subscription: { periodHours, nextReportAt }`, where `nextReportAt` stays `null` until a report has been delivered.
+`POST /repo/schedule` returns the report immediately and stores one subscription per email and repository (case-insensitive); posting again only changes the period. A new address is **pending**: it receives a confirmation email, not the report, and the response carries `subscription: { status: "pending", periodHours, nextReportAt: null }`. Confirming through `POST /repo/subscriptions/:token/confirm` activates it and sends the first report; unconfirmed requests are deleted after 24 hours. An already confirmed address gets the report straight away and `status: "active"`.
 
-Every email links to `PUBLIC_URL/?unsubscribe=<token>`. The UI asks for confirmation and then calls `DELETE /repo/subscriptions/:token`, so mail scanners that follow links cannot unsubscribe anyone. The token is never returned by the API.
+Every email links to the UI (`PUBLIC_URL/?confirm=<token>` and `PUBLIC_URL/?unsubscribe=<token>`), which asks for a click before calling the API, so mail scanners that follow links can neither confirm nor unsubscribe anyone. The token is never returned by the API.
 
-An hourly job (`@nestjs/schedule`) emails every subscription whose period has elapsed, so a report arrives within an hour of being due. A repository that fails (deleted, made private, no `package.json`) is logged and retried on the next run without blocking the others, and overlapping runs are skipped. Nothing is sent while SendGrid is not configured.
+An hourly job (`@nestjs/schedule`) emails every active subscription whose period has elapsed, so a report arrives within an hour of being due. A repository that fails (deleted, made private, no `package.json`) is logged and retried on the next run without blocking the others, and overlapping runs are skipped. Nothing is sent while SendGrid is not configured.
 
 ### Rate limiting
 
@@ -63,7 +64,7 @@ The client address comes from `X-Forwarded-For` when the request arrives from a 
 | `SENDGRID_API_KEY` | no | | Enables email reports together with `EMAIL_FROM` |
 | `EMAIL_FROM` | no | | Verified sender address |
 | `EMAIL_SUBJECT` | no | `Dependency report` | Appended to `owner/repo` in the subject |
-| `PUBLIC_URL` | no | `http://localhost:8080` | Address of the UI, used for unsubscribe links |
+| `PUBLIC_URL` | no | `http://localhost:8080` | Address of the UI, used for confirmation and unsubscribe links |
 | `DATABASE_PATH` | no | `data/package-validator.db` | SQLite file for subscriptions (`:memory:` for tests) |
 | `PORT` | no | `3288` | HTTP port |
 | `CORS_ORIGIN` | no | | Comma-separated origins; CORS stays off when unset |

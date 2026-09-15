@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, isValidRepository, scheduleReport, unsubscribe } from './api';
+import { ApiError, confirmSubscription, isValidRepository, scheduleReport, unsubscribe } from './api';
 
 const respond = (status: number, body: unknown) =>
   vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status }));
@@ -46,5 +46,19 @@ describe('api client', () => {
     respond(404, { message: 'Subscription not found or already removed', statusCode: 404 });
 
     await expect(unsubscribe('gone')).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('confirmSubscription', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('posts to the confirm endpoint and returns the subscription', async () => {
+    const body = { owner: 'a', repo: 'b', email: 'dev@example.com', subscription: { status: 'active', periodHours: 24, nextReportAt: null } };
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
+
+    await expect(confirmSubscription('abc_DEF-123')).resolves.toEqual(body);
+    expect(fetch).toHaveBeenCalledWith('/repo/subscriptions/abc_DEF-123/confirm', expect.objectContaining({ method: 'POST' }));
   });
 });

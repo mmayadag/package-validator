@@ -11,6 +11,8 @@ const ref = { owner: 'mmayadag', repo: 'package-validator' };
 const report = { html: '<table></table>', text: 'report' };
 const link = 'https://pv.example.com/?unsubscribe=abc';
 
+const sentMessage = () => vi.mocked(sgMail.send).mock.calls[0][0] as unknown as { [key: string]: string };
+
 describe('EmailService', () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -21,6 +23,7 @@ describe('EmailService', () => {
 
     expect(service.enabled).toBe(false);
     await expect(service.sendReport('dev@example.com', ref, report)).resolves.toBe(false);
+    await expect(service.sendConfirmation('dev@example.com', ref, 24, link)).resolves.toBe(false);
     expect(sgMail.send).not.toHaveBeenCalled();
   });
 
@@ -30,14 +33,25 @@ describe('EmailService', () => {
     await expect(service.sendReport('dev@example.com', ref, report, link)).resolves.toBe(true);
 
     expect(sgMail.setApiKey).toHaveBeenCalledWith('SG.test');
-    const [message] = vi.mocked(sgMail.send).mock.calls[0] as unknown as [{ [key: string]: string }];
-    expect(message).toMatchObject({
+    expect(sentMessage()).toMatchObject({
       to: 'dev@example.com',
       from: 'reports@example.com',
       subject: 'mmayadag/package-validator Dependency report',
     });
-    expect(message.html).toContain(`<a href="${link}">Unsubscribe</a>`);
-    expect(message.text).toContain(`Unsubscribe: ${link}`);
+    expect(sentMessage().html).toContain(`<a href="${link}">Unsubscribe</a>`);
+    expect(sentMessage().text).toContain(`Unsubscribe: ${link}`);
+  });
+
+  it('sends a confirmation request with the period and the link', async () => {
+    const service = new EmailService(configWith(configured));
+    const confirm = 'https://pv.example.com/?confirm=abc';
+
+    await expect(service.sendConfirmation('dev@example.com', ref, 12, confirm)).resolves.toBe(true);
+
+    expect(sentMessage().subject).toBe('Confirm your mmayadag/package-validator dependency report');
+    expect(sentMessage().html).toContain('every 12 hours');
+    expect(sentMessage().html).toContain(`<a href="${confirm}">Confirm the subscription</a>`);
+    expect(sentMessage().text).toContain(`Confirm the subscription: ${confirm}`);
   });
 
   it('returns false instead of throwing when delivery fails', async () => {

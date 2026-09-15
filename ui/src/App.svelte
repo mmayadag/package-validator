@@ -1,9 +1,12 @@
 <script lang="ts">
   import RepositoryCheck from './components/RepositoryCheck.svelte';
   import Unsubscribe from './components/Unsubscribe.svelte';
+  import Confirm from './components/Confirm.svelte';
 
-  // Report emails link to /?unsubscribe=<token>
-  const unsubscribeToken = new URLSearchParams(window.location.search).get('unsubscribe');
+  // Emails link to /?confirm=<token> and /?unsubscribe=<token>
+  const params = new URLSearchParams(window.location.search);
+  const confirmToken = params.get('confirm');
+  const unsubscribeToken = params.get('unsubscribe');
 </script>
 
 <div class="page">
@@ -21,7 +24,9 @@
   </header>
 
   <main>
-    {#if unsubscribeToken}
+    {#if confirmToken}
+      <Confirm token={confirmToken} />
+    {:else if unsubscribeToken}
       <Unsubscribe token={unsubscribeToken} />
     {:else}
       <RepositoryCheck />

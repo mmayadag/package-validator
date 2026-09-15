@@ -2,8 +2,8 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from
 import { RateLimit, STRICT_RATE_LIMIT } from '../common/rate-limit/rate-limit.decorator.js';
 import { RepositoryRefDto } from './dto/repository-ref.dto.js';
 import { ScheduleReportDto } from './dto/schedule-report.dto.js';
-import { UnsubscribeTokenDto } from './dto/unsubscribe-token.dto.js';
-import { type RepoReport, RepoService, type ScheduledReport } from './repo.service.js';
+import { SubscriptionTokenDto } from './dto/subscription-token.dto.js';
+import { type ConfirmedSubscription, type RepoReport, RepoService, type ScheduledReport } from './repo.service.js';
 
 interface ValidityResponse {
   valid: boolean;
@@ -37,10 +37,17 @@ export class RepoController {
     return this.repoService.subscribe({ owner, repo, email, period });
   }
 
+  @Post('subscriptions/:token/confirm')
+  @HttpCode(HttpStatus.OK)
+  @RateLimit(STRICT_RATE_LIMIT)
+  confirm(@Param() { token }: SubscriptionTokenDto): Promise<ConfirmedSubscription> {
+    return this.repoService.confirm(token);
+  }
+
   @Delete('subscriptions/:token')
   @HttpCode(HttpStatus.NO_CONTENT)
   @RateLimit(STRICT_RATE_LIMIT)
-  unsubscribe(@Param() { token }: UnsubscribeTokenDto): void {
+  unsubscribe(@Param() { token }: SubscriptionTokenDto): void {
     this.repoService.unsubscribe(token);
   }
 }

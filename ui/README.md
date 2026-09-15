@@ -12,6 +12,7 @@ src/
 ├── components/
 │   ├── RepositoryCheck.svelte   # form: repository, email, period
 │   ├── ReportTable.svelte       # outdated dependencies per section
+│   ├── Confirm.svelte           # confirmation page for /?confirm=<token>
 │   └── Unsubscribe.svelte       # confirmation page for /?unsubscribe=<token>
 └── lib/
     ├── api.ts                   # typed client for the API

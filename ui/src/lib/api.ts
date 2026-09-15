@@ -10,6 +10,8 @@ export interface OutdatedDependency {
 }
 
 export interface SubscriptionSummary {
+  /** `pending` until the address owner confirms by email. */
+  status: 'pending' | 'active';
   periodHours: ReportPeriod;
   /** ISO timestamp; null until the first report has been emailed. */
   nextReportAt: string | null;
@@ -18,7 +20,13 @@ export interface SubscriptionSummary {
 export interface ScheduledReport extends RepositoryRef {
   outdated: Record<string, OutdatedDependency[]>;
   text: string;
+  /** Whether a confirmation request or the report itself was emailed. */
   emailSent: boolean;
+  subscription: SubscriptionSummary;
+}
+
+export interface ConfirmedSubscription extends RepositoryRef {
+  email: string;
   subscription: SubscriptionSummary;
 }
 
@@ -63,6 +71,10 @@ export async function isValidRepository({ owner, repo }: RepositoryRef, signal?:
 
 export function scheduleReport(body: RepositoryRef & { email: string; period: ReportPeriod }): Promise<ScheduledReport> {
   return request<ScheduledReport>('/repo/schedule', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export function confirmSubscription(token: string): Promise<ConfirmedSubscription> {
+  return request<ConfirmedSubscription>(`/repo/subscriptions/${encodeURIComponent(token)}/confirm`, { method: 'POST' });
 }
 
 export async function unsubscribe(token: string): Promise<void> {

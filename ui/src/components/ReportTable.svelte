@@ -12,9 +12,15 @@
     <h2 id="report-title">{report.owner}/{report.repo}</h2>
     <p>
       {total === 0 ? 'All dependencies are up to date.' : `${total} outdated ${total === 1 ? 'dependency' : 'dependencies'}.`}
-      {report.emailSent
-        ? `The report was emailed to you and will arrive every ${report.subscription.periodHours} hours.`
-        : 'Email delivery is not configured on this server.'}
+      {#if report.subscription.status === 'active'}
+        {report.emailSent
+          ? `The report was emailed to you and will follow every ${report.subscription.periodHours} hours.`
+          : 'Email delivery is not configured on this server.'}
+      {:else if report.emailSent}
+        Check your inbox and confirm the subscription to receive this report every {report.subscription.periodHours} hours.
+      {:else}
+        Email delivery is not configured on this server, so the subscription cannot be confirmed.
+      {/if}
     </p>
   </header>
 

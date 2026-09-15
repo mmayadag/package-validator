@@ -13,6 +13,7 @@ const subscription = (overrides: Partial<Subscription>): Subscription => ({
   periodHours: 6,
   token: 'token-1',
   createdAt: 0,
+  confirmedAt: 0,
   lastSentAt: null,
   ...overrides,
 });
@@ -21,7 +22,7 @@ describe('ReportSchedulerService', () => {
   const now = 1_000_000;
   const report = { owner: 'mmayadag', repo: 'package-validator', outdated: {}, html: '', text: '' };
   const repoService = { buildReport: vi.fn() };
-  const subscriptions = { findDue: vi.fn(), markSent: vi.fn() };
+  const subscriptions = { findDue: vi.fn(), markSent: vi.fn(), deleteExpiredPending: vi.fn() };
   const email = { enabled: true, sendReport: vi.fn() };
   const config = { get: () => 'https://pv.example.com' };
   let scheduler: ReportSchedulerService;
@@ -29,6 +30,7 @@ describe('ReportSchedulerService', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     email.enabled = true;
+    subscriptions.deleteExpiredPending.mockReturnValue(0);
     scheduler = new ReportSchedulerService(
       repoService as unknown as RepoService,
       subscriptions as unknown as SubscriptionsRepository,
@@ -37,10 +39,12 @@ describe('ReportSchedulerService', () => {
     );
   });
 
-  it('does nothing while email delivery is not configured', async () => {
+  it('only expires pending subscriptions while email delivery is not configured', async () => {
     email.enabled = false;
+    subscriptions.deleteExpiredPending.mockReturnValue(3);
 
-    await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 0, sent: 0, failed: 0 });
+    await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 0, sent: 0, failed: 0, expired: 3 });
+    expect(subscriptions.deleteExpiredPending).toHaveBeenCalledWith(now);
     expect(subscriptions.findDue).not.toHaveBeenCalled();
   });
 
@@ -49,7 +53,7 @@ describe('ReportSchedulerService', () => {
     repoService.buildReport.mockResolvedValue(report);
     email.sendReport.mockResolvedValue(true);
 
-    await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 2, sent: 2, failed: 0 });
+    await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 2, sent: 2, failed: 0, expired: 0 });
 
     expect(subscriptions.findDue).toHaveBeenCalledWith(now);
     expect(email.sendReport).toHaveBeenCalledWith(
@@ -67,7 +71,7 @@ describe('ReportSchedulerService', () => {
     repoService.buildReport.mockRejectedValueOnce(new Error('not found')).mockResolvedValueOnce(report);
     email.sendReport.mockResolvedValue(true);
 
-    await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 2, sent: 1, failed: 1 });
+    await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 2, sent: 1, failed: 1, expired: 0 });
     expect(subscriptions.markSent).toHaveBeenCalledTimes(1);
     expect(subscriptions.markSent).toHaveBeenCalledWith(2, now);
   });
@@ -77,7 +81,7 @@ describe('ReportSchedulerService', () => {
     repoService.buildReport.mockResolvedValue(report);
     email.sendReport.mockResolvedValue(false);
 
-    await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 1, sent: 0, failed: 1 });
+    await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 1, sent: 0, failed: 1, expired: 0 });
     expect(subscriptions.markSent).not.toHaveBeenCalled();
   });
 
@@ -88,9 +92,9 @@ describe('ReportSchedulerService', () => {
     email.sendReport.mockResolvedValue(true);
 
     const first = scheduler.sendDueReports(now);
-    await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 0, sent: 0, failed: 0 });
+    await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 0, sent: 0, failed: 0, expired: 0 });
 
     finishBuild(report);
-    await expect(first).resolves.toEqual({ due: 1, sent: 1, failed: 0 });
+    await expect(first).resolves.toEqual({ due: 1, sent: 1, failed: 0, expired: 0 });
   });
 });

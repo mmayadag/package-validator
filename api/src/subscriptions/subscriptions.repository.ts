@@ -7,6 +7,8 @@ import { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../config/configuration.js';
 
 export const HOUR_MS = 3_600_000;
+/** Unconfirmed subscriptions are removed after this long. */
+export const PENDING_TTL_MS = 24 * HOUR_MS;
 
 export interface Subscription {
   id: number;
@@ -14,9 +16,11 @@ export interface Subscription {
   repo: string;
   email: string;
   periodHours: number;
-  /** Secret that authorises unsubscribing without an account. */
+  /** Secret in the confirmation and unsubscribe links; never returned by the API. */
   token: string;
   createdAt: number;
+  /** Set once the address owner clicked the confirmation link. */
+  confirmedAt: number | null;
   lastSentAt: number | null;
 }
 
@@ -33,19 +37,28 @@ const SCHEMA = `
     period_hours INTEGER NOT NULL CHECK (period_hours > 0),
     token        TEXT    NOT NULL UNIQUE,
     created_at   INTEGER NOT NULL,
+    confirmed_at INTEGER,
     last_sent_at INTEGER,
     UNIQUE (owner, repo, email)
   );
 `;
+
+/** Columns added after the first release, applied to databases created before them. */
+const MIGRATIONS: Array<{ column: string; ddl: string }> = [
+  { column: 'confirmed_at', ddl: 'ALTER TABLE subscriptions ADD COLUMN confirmed_at INTEGER' },
+];
 
 @Injectable()
 export class SubscriptionsRepository implements OnModuleDestroy {
   private readonly db: DatabaseSync;
   private readonly upsertStatement: StatementSync;
   private readonly findStatement: StatementSync;
+  private readonly findByTokenStatement: StatementSync;
   private readonly findDueStatement: StatementSync;
+  private readonly confirmStatement: StatementSync;
   private readonly markSentStatement: StatementSync;
   private readonly deleteByTokenStatement: StatementSync;
+  private readonly deleteExpiredPendingStatement: StatementSync;
 
   constructor(config: ConfigService<AppConfig, true>) {
     const path = config.get('databasePath', { infer: true });
@@ -56,6 +69,7 @@ export class SubscriptionsRepository implements OnModuleDestroy {
     this.db = new DatabaseSync(path);
     this.db.exec('PRAGMA journal_mode = WAL');
     this.db.exec(SCHEMA);
+    this.migrate();
 
     this.upsertStatement = this.db.prepare(`
       INSERT INTO subscriptions (owner, repo, email, period_hours, token, created_at)
@@ -66,16 +80,24 @@ export class SubscriptionsRepository implements OnModuleDestroy {
     this.findStatement = this.db.prepare(
       'SELECT * FROM subscriptions WHERE owner = :owner AND repo = :repo AND email = :email',
     );
+    this.findByTokenStatement = this.db.prepare('SELECT * FROM subscriptions WHERE token = :token');
     this.findDueStatement = this.db.prepare(`
       SELECT * FROM subscriptions
-      WHERE last_sent_at IS NULL OR last_sent_at + period_hours * ${HOUR_MS} <= :now
+      WHERE confirmed_at IS NOT NULL
+        AND (last_sent_at IS NULL OR last_sent_at + period_hours * ${HOUR_MS} <= :now)
       ORDER BY id
     `);
+    this.confirmStatement = this.db.prepare(
+      'UPDATE subscriptions SET confirmed_at = COALESCE(confirmed_at, :now) WHERE token = :token RETURNING *',
+    );
     this.markSentStatement = this.db.prepare('UPDATE subscriptions SET last_sent_at = :at WHERE id = :id');
     this.deleteByTokenStatement = this.db.prepare('DELETE FROM subscriptions WHERE token = :token');
+    this.deleteExpiredPendingStatement = this.db.prepare(
+      'DELETE FROM subscriptions WHERE confirmed_at IS NULL AND created_at < :before',
+    );
   }
 
-  /** Creates the subscription, or updates the period of an existing one and keeps its token. */
+  /** Creates the subscription, or updates the period of an existing one and keeps its token and confirmation. */
   upsert({ owner, repo, email, periodHours }: NewSubscription, now = Date.now()): Subscription {
     const token = randomBytes(24).toString('base64url');
     const row = this.upsertStatement.get({ owner, repo, email, periodHours, token, now });
@@ -90,9 +112,20 @@ export class SubscriptionsRepository implements OnModuleDestroy {
     return row ? toSubscription(row) : null;
   }
 
-  /** Subscriptions that have never been delivered or whose period has elapsed. */
+  findByToken(token: string): Subscription | null {
+    const row = this.findByTokenStatement.get({ token });
+    return row ? toSubscription(row) : null;
+  }
+
+  /** Confirmed subscriptions that have never been delivered or whose period has elapsed. */
   findDue(now = Date.now()): Subscription[] {
     return this.findDueStatement.all({ now }).map(toSubscription);
+  }
+
+  /** Marks the subscription confirmed; a second confirmation keeps the original time. */
+  confirm(token: string, now = Date.now()): Subscription | null {
+    const row = this.confirmStatement.get({ token, now });
+    return row ? toSubscription(row) : null;
   }
 
   markSent(id: number, at = Date.now()): void {
@@ -104,8 +137,24 @@ export class SubscriptionsRepository implements OnModuleDestroy {
     return Number(this.deleteByTokenStatement.run({ token }).changes) > 0;
   }
 
+  /** Removes subscriptions that were never confirmed within the pending TTL. Returns how many. */
+  deleteExpiredPending(now = Date.now()): number {
+    return Number(this.deleteExpiredPendingStatement.run({ before: now - PENDING_TTL_MS }).changes);
+  }
+
   onModuleDestroy(): void {
     this.db.close();
+  }
+
+  private migrate(): void {
+    const columns = new Set(
+      (this.db.prepare('PRAGMA table_info(subscriptions)').all() as Array<{ name: string }>).map(({ name }) => name),
+    );
+    for (const { column, ddl } of MIGRATIONS) {
+      if (!columns.has(column)) {
+        this.db.exec(ddl);
+      }
+    }
   }
 }
 
@@ -118,6 +167,7 @@ function toSubscription(row: Record<string, unknown>): Subscription {
     periodHours: Number(row.period_hours),
     token: String(row.token),
     createdAt: Number(row.created_at),
+    confirmedAt: row.confirmed_at === null ? null : Number(row.confirmed_at),
     lastSentAt: row.last_sent_at === null ? null : Number(row.last_sent_at),
   };
 }

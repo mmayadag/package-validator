@@ -9,8 +9,8 @@ import {
 import { EmailService } from '../email/email.service.js';
 import { GithubService, type RepositoryRef } from '../github/github.service.js';
 import { type RenderedReport, renderReport } from '../report/render-report.js';
-import { HOUR_MS, SubscriptionsRepository } from '../subscriptions/subscriptions.repository.js';
-import { unsubscribeUrl } from '../subscriptions/unsubscribe-url.js';
+import { confirmUrl, unsubscribeUrl } from '../subscriptions/subscription-links.js';
+import { HOUR_MS, type Subscription, SubscriptionsRepository } from '../subscriptions/subscriptions.repository.js';
 
 export interface RepoReport extends RenderedReport, RepositoryRef {
   outdated: OutdatedDependencies;
@@ -21,13 +21,23 @@ export interface SubscriptionRequest extends RepositoryRef {
   period: number;
 }
 
+export interface SubscriptionSummary {
+  /** `pending` until the address owner confirms; only active subscriptions receive scheduled reports. */
+  status: 'pending' | 'active';
+  periodHours: number;
+  /** When the next report is due; null until the first one has been delivered. */
+  nextReportAt: string | null;
+}
+
 export interface ScheduledReport extends RepoReport {
+  /** Whether an email (confirmation request or report) was sent. */
   emailSent: boolean;
-  subscription: {
-    periodHours: number;
-    /** When the next report is due; null until the first one has been delivered. */
-    nextReportAt: string | null;
-  };
+  subscription: SubscriptionSummary;
+}
+
+export interface ConfirmedSubscription extends RepositoryRef {
+  email: string;
+  subscription: SubscriptionSummary;
 }
 
 @Injectable()
@@ -64,31 +74,46 @@ export class RepoService {
     return { ...ref, outdated, ...renderReport(ref, outdated) };
   }
 
-  /** Validates the repository, stores the subscription and sends the first report right away. */
+  /**
+   * Validates the repository and stores the subscription. A new address gets a
+   * confirmation request; an already confirmed one gets the report right away.
+   */
   async subscribe({ owner, repo, email, period }: SubscriptionRequest): Promise<ScheduledReport> {
     const ref = { owner, repo };
     const report = await this.buildReport(ref);
     const subscription = this.subscriptions.upsert({ ...ref, email, periodHours: period });
 
-    const emailSent = await this.email.sendReport(
-      email,
-      ref,
-      report,
-      unsubscribeUrl(this.publicUrl, subscription.token),
-    );
-    const now = Date.now();
-    if (emailSent) {
-      this.subscriptions.markSent(subscription.id, now);
+    if (subscription.confirmedAt === null) {
+      const emailSent = await this.email.sendConfirmation(
+        email,
+        ref,
+        subscription.periodHours,
+        confirmUrl(this.publicUrl, subscription.token),
+      );
+      return { ...report, emailSent, subscription: summarize(subscription) };
     }
 
-    return {
-      ...report,
-      emailSent,
-      subscription: {
-        periodHours: subscription.periodHours,
-        nextReportAt: emailSent ? new Date(now + subscription.periodHours * HOUR_MS).toISOString() : null,
-      },
-    };
+    const emailSent = await this.deliver(subscription, report);
+    return { ...report, emailSent, subscription: summarize(this.subscriptions.findByToken(subscription.token)) };
+  }
+
+  /** Activates the subscription and sends the first report. */
+  async confirm(token: string): Promise<ConfirmedSubscription> {
+    const subscription = this.subscriptions.confirm(token);
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found; the confirmation link may have expired');
+    }
+
+    const ref = { owner: subscription.owner, repo: subscription.repo };
+    if (subscription.lastSentAt === null) {
+      try {
+        await this.deliver(subscription, await this.buildReport(ref));
+      } catch {
+        // The repository may have gone away since; the scheduler retries on its next run.
+      }
+    }
+
+    return { ...ref, email: subscription.email, subscription: summarize(this.subscriptions.findByToken(token)) };
   }
 
   unsubscribe(token: string): void {
@@ -96,6 +121,32 @@ export class RepoService {
       throw new NotFoundException('Subscription not found or already removed');
     }
   }
+
+  private async deliver(subscription: Subscription, report: RenderedReport): Promise<boolean> {
+    const ref = { owner: subscription.owner, repo: subscription.repo };
+    const sent = await this.email.sendReport(
+      subscription.email,
+      ref,
+      report,
+      unsubscribeUrl(this.publicUrl, subscription.token),
+    );
+    if (sent) {
+      this.subscriptions.markSent(subscription.id);
+    }
+    return sent;
+  }
+}
+
+function summarize(subscription: Subscription | null): SubscriptionSummary {
+  if (!subscription) {
+    throw new NotFoundException('Subscription not found');
+  }
+  const { confirmedAt, lastSentAt, periodHours } = subscription;
+  return {
+    status: confirmedAt === null ? 'pending' : 'active',
+    periodHours,
+    nextReportAt: lastSentAt === null ? null : new Date(lastSentAt + periodHours * HOUR_MS).toISOString(),
+  };
 }
 
 function parseManifest(raw: string): PackageManifest {

@@ -15,6 +15,21 @@ export function withUnsubscribeFooter(report: RenderedReport, url: string): Rend
   };
 }
 
+export function confirmationMessage({ owner, repo }: RepositoryRef, periodHours: number, url: string): RenderedReport {
+  const title = `${owner}/${repo}`;
+  return {
+    html:
+      `<p>Someone asked to receive the dependency report for <strong>${escapeHtml(title)}</strong> ` +
+      `at this address every ${periodHours} hours.</p>` +
+      `<p><a href="${escapeHtml(url)}">Confirm the subscription</a></p>` +
+      '<p style="color:#6b7280;font-size:12px">If that was not you, ignore this email; the request expires in 24 hours.</p>',
+    text:
+      `Someone asked to receive the dependency report for ${title} at this address every ${periodHours} hours.\n\n` +
+      `Confirm the subscription: ${url}\n\n` +
+      'If that was not you, ignore this email; the request expires in 24 hours.',
+  };
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -32,29 +47,28 @@ export class EmailService {
   }
 
   /** Sends the report; returns whether it was sent. A delivery failure never fails the request. */
-  async sendReport(
-    to: string,
-    { owner, repo }: RepositoryRef,
-    report: RenderedReport,
-    unsubscribeUrl?: string,
-  ): Promise<boolean> {
+  sendReport(to: string, ref: RepositoryRef, report: RenderedReport, unsubscribeUrl?: string): Promise<boolean> {
+    const message = unsubscribeUrl ? withUnsubscribeFooter(report, unsubscribeUrl) : report;
+    return this.send(to, `${ref.owner}/${ref.repo} ${this.settings.subject}`, message);
+  }
+
+  /** Asks the address owner to confirm a new subscription. */
+  sendConfirmation(to: string, ref: RepositoryRef, periodHours: number, confirmUrl: string): Promise<boolean> {
+    const message = confirmationMessage(ref, periodHours, confirmUrl);
+    return this.send(to, `Confirm your ${ref.owner}/${ref.repo} ${this.settings.subject.toLowerCase()}`, message);
+  }
+
+  private async send(to: string, subject: string, { html, text }: RenderedReport): Promise<boolean> {
     if (!this.enabled || !this.settings.from) {
-      this.logger.warn('SENDGRID_API_KEY or EMAIL_FROM is not set; skipping the email report');
+      this.logger.warn('SENDGRID_API_KEY or EMAIL_FROM is not set; skipping the email');
       return false;
     }
 
-    const { html, text } = unsubscribeUrl ? withUnsubscribeFooter(report, unsubscribeUrl) : report;
     try {
-      await sgMail.send({
-        to,
-        from: this.settings.from,
-        subject: `${owner}/${repo} ${this.settings.subject}`,
-        html,
-        text,
-      });
+      await sgMail.send({ to, from: this.settings.from, subject, html, text });
       return true;
     } catch (error) {
-      this.logger.error(`Could not send the report for ${owner}/${repo}: ${String(error)}`);
+      this.logger.error(`Could not send "${subject}": ${String(error)}`);
       return false;
     }
   }

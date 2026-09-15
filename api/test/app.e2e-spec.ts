@@ -12,7 +12,7 @@ import { SubscriptionsRepository } from '../src/subscriptions/subscriptions.repo
 describe('API (e2e)', () => {
   const github = { repositoryExists: vi.fn(), getPackageJson: vi.fn() };
   const dependencyChecker = { findOutdated: vi.fn() };
-  const email = { sendReport: vi.fn() };
+  const email = { sendReport: vi.fn(), sendConfirmation: vi.fn() };
   let moduleRef: TestingModule;
   let app: INestApplication;
 
@@ -110,9 +110,9 @@ describe('API (e2e)', () => {
   describe('POST /repo/schedule', () => {
     const body = { owner: 'mmayadag', repo: 'app', email: 'dev@example.com', period: 24 };
 
-    it('returns the report, whether it was emailed and the subscription', async () => {
+    it('returns the report and asks a new address to confirm', async () => {
       givenValidRepository();
-      email.sendReport.mockResolvedValue(true);
+      email.sendConfirmation.mockResolvedValue(true);
 
       const response = await request(app.getHttpServer()).post('/repo/schedule').send(body).expect(200);
 
@@ -120,20 +120,21 @@ describe('API (e2e)', () => {
         owner: 'mmayadag',
         repo: 'app',
         emailSent: true,
-        subscription: { periodHours: 24, nextReportAt: expect.any(String) },
+        subscription: { status: 'pending', periodHours: 24, nextReportAt: null },
       });
       expect(response.body.subscription).not.toHaveProperty('token');
-      expect(email.sendReport).toHaveBeenCalledWith(
+      expect(email.sendReport).not.toHaveBeenCalled();
+      expect(email.sendConfirmation).toHaveBeenCalledWith(
         'dev@example.com',
         { owner: 'mmayadag', repo: 'app' },
-        expect.anything(),
-        expect.stringMatching(/^https:\/\/pv\.example\.com\/\?unsubscribe=[A-Za-z0-9_-]{32}$/),
+        24,
+        expect.stringMatching(/^https:\/\/pv\.example\.com\/\?confirm=[A-Za-z0-9_-]{32}$/),
       );
     });
 
     it('keeps one subscription per email and repository', async () => {
       givenValidRepository();
-      email.sendReport.mockResolvedValue(false);
+      email.sendConfirmation.mockResolvedValue(false);
 
       await request(app.getHttpServer()).post('/repo/schedule').send({ ...body, repo: 'dedupe', period: 6 }).expect(200);
       await request(app.getHttpServer()).post('/repo/schedule').send({ ...body, repo: 'Dedupe', period: 12 }).expect(200);
@@ -153,18 +154,65 @@ describe('API (e2e)', () => {
     });
   });
 
+  const confirmLinkToken = () => new URL(email.sendConfirmation.mock.calls[0][3] as string).searchParams.get('confirm');
+
+  describe('POST /repo/subscriptions/:token/confirm', () => {
+    it('activates the subscription, sends the first report and is idempotent', async () => {
+      givenValidRepository();
+      email.sendConfirmation.mockResolvedValue(true);
+      email.sendReport.mockResolvedValue(true);
+      const key = { owner: 'mmayadag', repo: 'confirm-me', email: 'dev@example.com' };
+      await request(app.getHttpServer()).post('/repo/schedule').send({ ...key, period: 12 }).expect(200);
+      const token = confirmLinkToken();
+
+      const { body } = await request(app.getHttpServer()).post(`/repo/subscriptions/${token}/confirm`).expect(200);
+
+      expect(body).toEqual({ ...key, subscription: { status: 'active', periodHours: 12, nextReportAt: expect.any(String) } });
+      expect(email.sendReport).toHaveBeenCalledWith(
+        'dev@example.com',
+        { owner: 'mmayadag', repo: 'confirm-me' },
+        expect.anything(),
+        `https://pv.example.com/?unsubscribe=${token}`,
+      );
+      expect(moduleRef.get(SubscriptionsRepository).findDue(Date.now())).toEqual([]);
+
+      await request(app.getHttpServer()).post(`/repo/subscriptions/${token}/confirm`).expect(200);
+      expect(email.sendReport).toHaveBeenCalledTimes(1);
+    });
+
+    it('sends the report straight away when a confirmed address subscribes again', async () => {
+      givenValidRepository();
+      email.sendConfirmation.mockResolvedValue(true);
+      email.sendReport.mockResolvedValue(true);
+      const key = { owner: 'mmayadag', repo: 'again', email: 'dev@example.com' };
+      await request(app.getHttpServer()).post('/repo/schedule').send({ ...key, period: 6 }).expect(200);
+      await request(app.getHttpServer()).post(`/repo/subscriptions/${confirmLinkToken()}/confirm`).expect(200);
+      vi.clearAllMocks();
+      givenValidRepository();
+      email.sendReport.mockResolvedValue(true);
+
+      const { body } = await request(app.getHttpServer()).post('/repo/schedule').send({ ...key, period: 24 }).expect(200);
+
+      expect(body.subscription).toMatchObject({ status: 'active', periodHours: 24 });
+      expect(email.sendConfirmation).not.toHaveBeenCalled();
+      expect(email.sendReport).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns 404 for an unknown token', () =>
+      request(app.getHttpServer()).post(`/repo/subscriptions/${'a'.repeat(32)}/confirm`).expect(404));
+  });
+
   describe('DELETE /repo/subscriptions/:token', () => {
     it('unsubscribes with the token from the email link', async () => {
       givenValidRepository();
-      email.sendReport.mockResolvedValue(true);
+      email.sendConfirmation.mockResolvedValue(true);
       const subscription = { owner: 'mmayadag', repo: 'unsubscribe-me', email: 'dev@example.com' };
 
       await request(app.getHttpServer())
         .post('/repo/schedule')
         .send({ ...subscription, period: 6 })
         .expect(200);
-      const link = new URL(email.sendReport.mock.calls[0][3] as string);
-      const token = link.searchParams.get('unsubscribe');
+      const token = confirmLinkToken();
 
       await request(app.getHttpServer()).delete(`/repo/subscriptions/${token}`).expect(204);
       expect(moduleRef.get(SubscriptionsRepository).find(subscription)).toBeNull();

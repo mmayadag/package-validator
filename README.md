@@ -5,7 +5,7 @@
 ![Node](https://img.shields.io/badge/node-24.15%2B-339933?logo=nodedotjs&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-Point it at a public GitHub repository and get a report of which `package.json` dependencies have newer versions on npm, in the browser and by email every 6, 12 or 24 hours.
+Point it at a public GitHub repository and get a report of which `package.json` dependencies have newer versions on npm, in the browser and, after confirming your address, by email every 6, 12 or 24 hours.
 
 ## Architecture
 
@@ -59,7 +59,8 @@ cd ui && npm run dev       # http://localhost:5173, /repo proxied to the API
 | `GET` | `/repo/isValid/:owner/:repo` | | `{ "valid": boolean }` |
 | `POST` | `/repo/isValid` | `{ owner, repo }` | `{ "valid": boolean }` |
 | `GET` | `/repo/details/:owner/:repo` | | Report, `404` unknown repo, `422` no `package.json` |
-| `POST` | `/repo/schedule` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | Report, `emailSent` and the stored subscription |
+| `POST` | `/repo/schedule` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | Report and a pending subscription; a confirmation email is sent |
+| `POST` | `/repo/subscriptions/:token/confirm` | | Activates the subscription and sends the first report |
 | `DELETE` | `/repo/subscriptions/:token` | | `204`, `404` unknown token |
 
 Response shapes, status codes and module layout are documented in [`api/README.md`](api/README.md).
