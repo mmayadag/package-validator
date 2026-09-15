@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/mmayadag/package-validator/actions/workflows/ci.yml/badge.svg)](https://github.com/mmayadag/package-validator/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/mmayadag/package-validator/actions/workflows/codeql.yml/badge.svg)](https://github.com/mmayadag/package-validator/actions/workflows/codeql.yml)
+[![CodeQL](https://github.com/mmayadag/package-validator/actions/workflows/codeql.yml/badge.svg)](https://github.com/mmayadag/package-validator/actions/workflows/codeql.yml)
 [![Architecture](https://img.shields.io/badge/architecture-diagram-0b63ce)](https://mmayadag.github.io/package-validator/)
 ![Node](https://img.shields.io/badge/node-24.15%2B-339933?logo=nodedotjs&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
