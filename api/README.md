@@ -38,7 +38,7 @@ A report looks like this:
 }
 ```
 
-`period` is validated and stored in the request contract; recurring delivery is not implemented yet, so the report is sent once.
+`POST /repo/schedule` also stores a subscription in SQLite (Node's built-in `node:sqlite`), one per email and repository; posting again only changes the period. The response carries `subscription: { periodHours, nextReportAt }`, where `nextReportAt` stays `null` until a report has been delivered.
 
 ## Configuration
 
@@ -50,6 +50,7 @@ A report looks like this:
 | `EMAIL_FROM` | no | | Verified sender address |
 | `EMAIL_SUBJECT` | no | `Dependency report` | Appended to `owner/repo` in the subject |
 | `PORT` | no | `3288` | HTTP port |
+| `DATABASE_PATH` | no | `data/package-validator.db` | SQLite file for subscriptions (`:memory:` for tests) |
 | `CORS_ORIGIN` | no | | Comma-separated origins; CORS stays off when unset |
 
 Invalid values stop the application at startup. `.env` is read from `api/` and from the repository root.

@@ -7,13 +7,24 @@ import {
 import { EmailService } from '../email/email.service.js';
 import { GithubService, type RepositoryRef } from '../github/github.service.js';
 import { type RenderedReport, renderReport } from '../report/render-report.js';
+import { HOUR_MS, SubscriptionsRepository } from '../subscriptions/subscriptions.repository.js';
 
 export interface RepoReport extends RenderedReport, RepositoryRef {
   outdated: OutdatedDependencies;
 }
 
+export interface SubscriptionRequest extends RepositoryRef {
+  email: string;
+  period: number;
+}
+
 export interface ScheduledReport extends RepoReport {
   emailSent: boolean;
+  subscription: {
+    periodHours: number;
+    /** When the next report is due; null until the first one has been delivered. */
+    nextReportAt: string | null;
+  };
 }
 
 @Injectable()
@@ -22,6 +33,7 @@ export class RepoService {
     private readonly github: GithubService,
     private readonly dependencyChecker: DependencyCheckerService,
     private readonly email: EmailService,
+    private readonly subscriptions: SubscriptionsRepository,
   ) {}
 
   isValid(ref: RepositoryRef): Promise<boolean> {
@@ -44,10 +56,26 @@ export class RepoService {
     return { ...ref, outdated, ...renderReport(ref, outdated) };
   }
 
-  async sendReport(ref: RepositoryRef, to: string): Promise<ScheduledReport> {
+  /** Validates the repository, stores the subscription and sends the first report right away. */
+  async subscribe({ owner, repo, email, period }: SubscriptionRequest): Promise<ScheduledReport> {
+    const ref = { owner, repo };
     const report = await this.buildReport(ref);
-    const emailSent = await this.email.sendReport(to, ref, report);
-    return { ...report, emailSent };
+    const subscription = this.subscriptions.upsert({ ...ref, email, periodHours: period });
+
+    const emailSent = await this.email.sendReport(email, ref, report);
+    const now = Date.now();
+    if (emailSent) {
+      this.subscriptions.markSent(subscription.id, now);
+    }
+
+    return {
+      ...report,
+      emailSent,
+      subscription: {
+        periodHours: subscription.periodHours,
+        nextReportAt: emailSent ? new Date(now + subscription.periodHours * HOUR_MS).toISOString() : null,
+      },
+    };
   }
 }
 

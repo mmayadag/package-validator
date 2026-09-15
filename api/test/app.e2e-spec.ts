@@ -1,21 +1,24 @@
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/app.setup.js';
 import { DependencyCheckerService } from '../src/dependencies/dependency-checker.service.js';
 import { EmailService } from '../src/email/email.service.js';
 import { GithubService } from '../src/github/github.service.js';
+import { SubscriptionsRepository } from '../src/subscriptions/subscriptions.repository.js';
 
 describe('API (e2e)', () => {
   const github = { repositoryExists: vi.fn(), getPackageJson: vi.fn() };
   const dependencyChecker = { findOutdated: vi.fn() };
   const email = { sendReport: vi.fn() };
+  let moduleRef: TestingModule;
   let app: INestApplication;
 
   beforeAll(async () => {
     vi.stubEnv('TOKEN', 'ghp_e2e');
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+    vi.stubEnv('DATABASE_PATH', ':memory:');
+    moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(GithubService)
       .useValue(github)
       .overrideProvider(DependencyCheckerService)
@@ -93,16 +96,37 @@ describe('API (e2e)', () => {
   describe('POST /repo/schedule', () => {
     const body = { owner: 'mmayadag', repo: 'app', email: 'dev@example.com', period: 24 };
 
-    it('returns the report and whether it was emailed', async () => {
+    const givenValidRepository = () => {
       github.repositoryExists.mockResolvedValue(true);
       github.getPackageJson.mockResolvedValue('{}');
       dependencyChecker.findOutdated.mockResolvedValue({});
-      email.sendReport.mockResolvedValue(false);
+    };
+
+    it('returns the report, whether it was emailed and the subscription', async () => {
+      givenValidRepository();
+      email.sendReport.mockResolvedValue(true);
 
       const response = await request(app.getHttpServer()).post('/repo/schedule').send(body).expect(200);
 
-      expect(response.body).toMatchObject({ owner: 'mmayadag', repo: 'app', emailSent: false });
+      expect(response.body).toMatchObject({
+        owner: 'mmayadag',
+        repo: 'app',
+        emailSent: true,
+        subscription: { periodHours: 24, nextReportAt: expect.any(String) },
+      });
+      expect(response.body.subscription).not.toHaveProperty('token');
       expect(email.sendReport).toHaveBeenCalledWith('dev@example.com', { owner: 'mmayadag', repo: 'app' }, expect.anything());
+    });
+
+    it('keeps one subscription per email and repository', async () => {
+      givenValidRepository();
+      email.sendReport.mockResolvedValue(false);
+
+      await request(app.getHttpServer()).post('/repo/schedule').send({ ...body, repo: 'dedupe', period: 6 }).expect(200);
+      await request(app.getHttpServer()).post('/repo/schedule').send({ ...body, repo: 'Dedupe', period: 12 }).expect(200);
+
+      const stored = moduleRef.get(SubscriptionsRepository).find({ owner: 'mmayadag', repo: 'dedupe', email: body.email });
+      expect(stored?.periodHours).toBe(12);
     });
 
     it.each([

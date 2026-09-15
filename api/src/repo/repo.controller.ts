@@ -29,7 +29,7 @@ export class RepoController {
 
   @Post('schedule')
   @HttpCode(HttpStatus.OK)
-  schedule(@Body() { owner, repo, email }: ScheduleReportDto): Promise<ScheduledReport> {
-    return this.repoService.sendReport({ owner, repo }, email);
+  schedule(@Body() { owner, repo, email, period }: ScheduleReportDto): Promise<ScheduledReport> {
+    return this.repoService.subscribe({ owner, repo, email, period });
   }
 }

@@ -25,6 +25,8 @@ WORKDIR /app
 COPY --chown=node:node package.json ./
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
+# SQLite database; mounted as a volume by docker compose
+RUN mkdir -p data && chown node:node data
 USER node
 EXPOSE 3288
 HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \

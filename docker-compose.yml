@@ -4,6 +4,9 @@ services:
     env_file: .env
     expose:
       - "3288"
+    volumes:
+      # SQLite database with the report subscriptions
+      - api-data:/app/data
     restart: unless-stopped
 
   ui:
@@ -15,3 +18,6 @@ services:
         # the api image defines a HEALTHCHECK on GET /health
         condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  api-data:

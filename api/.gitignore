@@ -109,3 +109,6 @@ dist
 .scannerwork/
 # scratch clones written by the validator
 tmp/
+
+# SQLite database created by the subscriptions module
+data/

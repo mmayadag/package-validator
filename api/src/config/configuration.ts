@@ -16,6 +16,7 @@ import {
 export interface AppConfig {
   port: number;
   corsOrigin?: string;
+  databasePath: string;
   github: {
     endpoint: string;
     token: string;
@@ -37,6 +38,10 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   CORS_ORIGIN?: string;
+
+  @IsOptional()
+  @IsString()
+  DATABASE_PATH?: string;
 
   @IsOptional()
   @IsUrl({ require_tld: false })
@@ -78,6 +83,7 @@ export function loadConfig(env: Record<string, unknown>): AppConfig {
   return {
     port: vars.PORT ?? 3288,
     corsOrigin: vars.CORS_ORIGIN,
+    databasePath: vars.DATABASE_PATH ?? 'data/package-validator.db',
     github: {
       endpoint: vars.GITHUB_ENDPOINT ?? 'https://api.github.com/graphql',
       token: vars.TOKEN,
