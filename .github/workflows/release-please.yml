@@ -3,18 +3,33 @@ name: Release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
 
+env:
+  RELEASE_PLEASE_VERSION: "17"
+  # A PAT lets CI run on the release pull request; GITHUB_TOKEN cannot trigger workflows.
+  RELEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          # A PAT lets CI run on the release pull request; GITHUB_TOKEN cannot trigger workflows.
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
+          node-version-file: .nvmrc
+      # The CLI is used instead of the action so each command can be retried:
+      # GitHub's GraphQL commit-history query fails intermittently with
+      # "Something went wrong while executing your query".
+      - name: Open or update the release pull request
+        run: ./.github/scripts/retry.sh 5 npx --yes "release-please@$RELEASE_PLEASE_VERSION" release-pr
+          --token="$RELEASE_TOKEN" --repo-url="$GITHUB_REPOSITORY" --target-branch=main
+          --config-file=release-please-config.json --manifest-file=.release-please-manifest.json
+      - name: Publish the GitHub release for a merged release pull request
+        run: ./.github/scripts/retry.sh 5 npx --yes "release-please@$RELEASE_PLEASE_VERSION" github-release
+          --token="$RELEASE_TOKEN" --repo-url="$GITHUB_REPOSITORY" --target-branch=main
+          --config-file=release-please-config.json --manifest-file=.release-please-manifest.json
