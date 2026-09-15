@@ -13,18 +13,33 @@ Both were separate repositories ([package-validator-api](https://github.com/mmay
 
 ## Run with Docker
 
+One command builds and starts everything in the background:
+
 ```bash
-cp .env.example .env    # set TOKEN to a GitHub token
-docker compose up --build
+make up
 ```
 
-Open http://localhost:8080. The UI container (Caddy) serves the Svelte bundle and proxies `/repo/*` to the API container, so no CORS configuration is needed.
+It creates `.env` from `.env.example` on the first run (set `TOKEN` to a GitHub token, then run `make up` again) and runs `docker compose up -d --build`.
+
+| Command | What it does |
+|---|---|
+| `make up` | Build images and start the stack |
+| `make down` | Stop and remove the containers |
+| `make logs` | Follow the logs of both containers |
+| `make ps` | Show container status |
+
+Without `make`: `cp .env.example .env && docker compose up -d --build`.
+
+Open http://localhost:8080. The UI container (Caddy) serves the Svelte bundle and proxies `/repo/*` to the API container, so no CORS configuration is needed. Images are built on `node:26-alpine`.
 
 ## Run locally
+
+Requires Node.js 24.15+ (or 22.22+ / 26+, the range `npm-check-updates` supports) and Yarn 1.
 
 ```bash
 # API — http://localhost:3288
 cd api && yarn install && yarn start:dev
+cd api && yarn test
 
 # UI — http://localhost:5000
 cd ui && npm install && npm run dev

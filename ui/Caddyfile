@@ -1,11 +1,16 @@
 :80 {
-	root * /srv
 	encode gzip
 
-	# API calls are same-origin; forward them to the NestJS container
-	reverse_proxy /repo/* api:3288
+	# API calls are same-origin; forward them to the NestJS container.
+	# handle blocks are mutually exclusive, so try_files below can't rewrite these.
+	handle /repo/* {
+		reverse_proxy api:3288
+	}
 
 	# Svelte bundle and static assets
-	try_files {path} /index.html
-	file_server
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
 }

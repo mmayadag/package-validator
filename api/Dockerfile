@@ -1,4 +1,5 @@
-FROM node:20-alpine AS deps
+FROM node:26-alpine AS deps
+RUN npm install -g yarn@1.22.22
 WORKDIR /app
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
@@ -8,7 +9,8 @@ COPY tsconfig.json tsconfig.build.json nest-cli.json ./
 COPY src ./src
 RUN yarn build
 
-FROM node:20-alpine AS runtime
+FROM node:26-alpine AS runtime
+RUN npm install -g yarn@1.22.22
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json yarn.lock ./

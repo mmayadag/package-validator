@@ -1,6 +1,6 @@
 {
   "name": "package-validator-ui",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Package validator front-end component.UI crated with svelte",
   "main": "index.js",
   "repository": "https://github.com/mmayadag/package-validator-ui.git",
@@ -13,18 +13,18 @@
     "start": "sirv public"
   },
   "devDependencies": {
-    "@atolye15/eslint-config-base": "^1.1.0",
-    "@rollup/plugin-commonjs": "^15.0.0",
-    "@rollup/plugin-node-resolve": "^9.0.0",
-    "rollup": "^2.23.1",
-    "rollup-plugin-livereload": "^1.3.0",
+    "@atolye15/eslint-config-base": "^1.2.0",
+    "@rollup/plugin-commonjs": "^29.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "rollup": "^4.63.3",
+    "rollup-plugin-livereload": "^2.0.5",
     "rollup-plugin-svelte": "^7.2.3",
-    "rollup-plugin-terser": "^7.0.0",
-    "svelte": "^3.59.2"
+    "svelte": "^5.57.0",
+    "@rollup/plugin-terser": "^1.0.0"
   },
   "dependencies": {
-    "marked": "^1.1.1",
-    "rollup-plugin-css-only": "^3.1.0",
-    "sirv-cli": "^1.0.6"
+    "marked": "^18.0.13",
+    "rollup-plugin-css-only": "^4.5.5",
+    "sirv-cli": "^3.0.1"
   }
 }
