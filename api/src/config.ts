@@ -1,0 +1,26 @@
+import { ConfigModule } from '@nestjs/config';
+
+ConfigModule.forRoot();
+
+const {
+  GITHUB_ENDPOINT,
+  TOKEN,
+  SENDGRID_API_KEY,
+  TEMP_PATH,
+  DEPENDENCIES_FILE,
+  DEV_DEPENDENCIES_FILE,
+  RESULT_FILE,
+  EMAIL_FROM,
+  EMAIL_SUBJECT
+} = process.env;
+export {
+  GITHUB_ENDPOINT,
+  TOKEN,
+  SENDGRID_API_KEY,
+  TEMP_PATH,
+  DEPENDENCIES_FILE,
+  DEV_DEPENDENCIES_FILE,
+  RESULT_FILE,
+  EMAIL_FROM,
+  EMAIL_SUBJECT
+};
