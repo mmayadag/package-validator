@@ -6,13 +6,24 @@ export interface RenderedReport {
   text: string;
 }
 
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+/** Package names and ranges come from a third-party package.json, so they are never trusted as markup. */
+export const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
+
 export function renderReport({ owner, repo }: RepositoryRef, outdated: OutdatedDependencies): RenderedReport {
   const sections = Object.entries(outdated);
   const title = `${owner}/${repo}`;
 
   if (sections.length === 0) {
     const message = `All dependencies of ${title} are up to date.`;
-    return { html: `<p>${message}</p>`, text: message };
+    return { html: `<p>${escapeHtml(message)}</p>`, text: message };
   }
 
   const html = sections
@@ -20,11 +31,11 @@ export function renderReport({ owner, repo }: RepositoryRef, outdated: OutdatedD
       const rows = packages
         .map(
           ({ name, current, latest }) =>
-            `<tr><td>${name}</td><td>${current}</td><td>${latest}</td></tr>`,
+            `<tr><td>${escapeHtml(name)}</td><td>${escapeHtml(current)}</td><td>${escapeHtml(latest)}</td></tr>`,
         )
         .join('');
       return (
-        `<table><caption>${section}</caption>` +
+        `<table><caption>${escapeHtml(section)}</caption>` +
         '<thead><tr><th>package</th><th>current</th><th>latest</th></tr></thead>' +
         `<tbody>${rows}</tbody></table>`
       );
