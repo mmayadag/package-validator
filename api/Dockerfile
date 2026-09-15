@@ -1,6 +1,11 @@
-FROM node:26-alpine AS deps
-RUN npm install -g yarn@1.22.22
+# syntax=docker/dockerfile:1
+
+FROM node:26-alpine AS base
+# Node 25+ no longer bundles corepack, so yarn classic is installed explicitly.
+RUN npm install -g yarn@1.22.22 --no-audit --no-fund
 WORKDIR /app
+
+FROM base AS deps
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
@@ -9,16 +14,17 @@ COPY tsconfig.json tsconfig.build.json nest-cli.json ./
 COPY src ./src
 RUN yarn build
 
-FROM node:26-alpine AS runtime
-RUN npm install -g yarn@1.22.22
-WORKDIR /app
-ENV NODE_ENV=production
+FROM base AS prod-deps
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile --production && yarn cache clean
-COPY --from=build /app/dist ./dist
-COPY public ./public
-COPY views ./views
-RUN mkdir -p tmp && chown node:node tmp
-EXPOSE 3288
+
+FROM node:26-alpine AS runtime
+ENV NODE_ENV=production \
+    PORT=3288
+WORKDIR /app
+COPY --chown=node:node package.json ./
+COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/dist ./dist
 USER node
-CMD ["node", "dist/main"]
+EXPOSE 3288
+CMD ["node", "dist/main.js"]

@@ -1,43 +1,64 @@
-import { Injectable, HttpException } from "@nestjs/common";
-import { REPOS } from "../mocks/repos.mock";
+import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  DependencyCheckerService,
+  type OutdatedDependencies,
+  type PackageManifest,
+} from '../dependencies/dependency-checker.service.js';
+import { EmailService } from '../email/email.service.js';
+import { GithubService, type RepositoryRef } from '../github/github.service.js';
+import { type RenderedReport, renderReport } from '../report/render-report.js';
+
+export interface RepoReport extends RenderedReport, RepositoryRef {
+  outdated: OutdatedDependencies;
+}
+
+export interface ScheduledReport extends RepoReport {
+  emailSent: boolean;
+}
 
 @Injectable()
 export class RepoService {
-  repos = REPOS;
+  constructor(
+    private readonly github: GithubService,
+    private readonly dependencyChecker: DependencyCheckerService,
+    private readonly email: EmailService,
+  ) {}
 
-  getRepos(): Promise<any> {
-    return new Promise(resolve => {
-      resolve(this.repos);
-    });
+  isValid(ref: RepositoryRef): Promise<boolean> {
+    return this.github.repositoryExists(ref);
   }
 
-  getRepo(repoID): Promise<any> {
-    let id = Number(repoID);
-    return new Promise(resolve => {
-      const repo = this.repos.find(repo => repo.id === id);
-      if (!repo) {
-        throw new HttpException("Repo does not exist!", 404);
-      }
-      resolve(repo);
-    });
+  async buildReport({ owner, repo }: RepositoryRef): Promise<RepoReport> {
+    const ref = { owner, repo };
+
+    if (!(await this.github.repositoryExists(ref))) {
+      throw new NotFoundException(`Repository ${owner}/${repo} does not exist or is not public`);
+    }
+
+    const raw = await this.github.getPackageJson(ref);
+    if (raw === null) {
+      throw new UnprocessableEntityException(`${owner}/${repo} has no package.json on its default branch`);
+    }
+
+    const outdated = await this.dependencyChecker.findOutdated(parseManifest(raw));
+    return { ...ref, outdated, ...renderReport(ref, outdated) };
   }
 
-  addRepo(repo): Promise<any> {
-    return new Promise(resolve => {
-      this.repos.push(repo);
-      resolve(this.repos);
-    });
+  async sendReport(ref: RepositoryRef, to: string): Promise<ScheduledReport> {
+    const report = await this.buildReport(ref);
+    const emailSent = await this.email.sendReport(to, ref, report);
+    return { ...report, emailSent };
   }
+}
 
-  deleteRepo(repoID): Promise<any> {
-    let id = Number(repoID);
-    return new Promise(resolve => {
-      let index = this.repos.findIndex(repo => repo.id === id);
-      if (index === -1) {
-        throw new HttpException("Book does not exist!", 404);
-      }
-      this.repos.splice(1, index);
-      resolve(this.repos);
-    });
+function parseManifest(raw: string): PackageManifest {
+  try {
+    const manifest: unknown = JSON.parse(raw);
+    if (typeof manifest !== 'object' || manifest === null || Array.isArray(manifest)) {
+      throw new TypeError('not an object');
+    }
+    return manifest as PackageManifest;
+  } catch {
+    throw new UnprocessableEntityException('package.json is not valid JSON');
   }
 }

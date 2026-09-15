@@ -1,69 +1,35 @@
-import { ValidationPipe } from "./validation.pipe";
-import {
-    Controller,
-    Get,
-    Res,
-    Body,
-    Param,
-    Post,
-    HttpStatus,
-    HttpCode
-} from "@nestjs/common";
-import RepoDTO from "./dto/repo.dto";
-import { RepoService } from "./repo.service";
-import { AppService, GithubService } from "../services/index";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { RepositoryRefDto } from './dto/repository-ref.dto.js';
+import { ScheduleReportDto } from './dto/schedule-report.dto.js';
+import { type RepoReport, RepoService, type ScheduledReport } from './repo.service.js';
 
-@Controller("repo")
+interface ValidityResponse {
+  valid: boolean;
+}
+
+@Controller('repo')
 export class RepoController {
-    constructor(private repoService: RepoService) { }
+  constructor(private readonly repoService: RepoService) {}
 
-    @Get("details/:owner/:repo")
-    async repoDetails(@Param("owner") owner, @Param("repo") repo, @Res() res): Promise<any> {
-        // TODO: IF this repo exists
-        const service = new AppService();
-        return await service.start({ repo, owner }, res);
-    }
+  @Get('isValid/:owner/:repo')
+  async isValidByPath(@Param() ref: RepositoryRefDto): Promise<ValidityResponse> {
+    return { valid: await this.repoService.isValid(ref) };
+  }
 
-    @Post("isValid")
-    @HttpCode(HttpStatus.OK)
-    async isValid(
-        @Body(new ValidationPipe()) repoDTO: RepoDTO,
-        @Res() res
-    ): Promise<any> {
-        const { owner, repo } = repoDTO;
-        const service = new GithubService();
-        try {
-            let valid = await service.isValidGithubRepo(owner, repo);
-            return res.json({ valid });
-        } catch (e) {
-            return res.json({ valid: false });
-        }
-    }
+  @Post('isValid')
+  @HttpCode(HttpStatus.OK)
+  async isValid(@Body() ref: RepositoryRefDto): Promise<ValidityResponse> {
+    return { valid: await this.repoService.isValid(ref) };
+  }
 
-    @Get("isValid/:owner/:repo")
-    @HttpCode(HttpStatus.OK)
-    async isValide(
-        @Param("owner") owner,
-        @Param("repo") repo,
-        @Res() res
-    ): Promise<any> {
-        const service = new GithubService();
-        try {
-            let valid = await service.isValidGithubRepo(owner, repo);
-            return res.json({ valid });
-        } catch (e) {
-            return res.json({ valid: false });
-        }
-    }
+  @Get('details/:owner/:repo')
+  details(@Param() ref: RepositoryRefDto): Promise<RepoReport> {
+    return this.repoService.buildReport(ref);
+  }
 
-    @Post("schedule")
-    @HttpCode(HttpStatus.OK)
-    async create(
-        @Body(new ValidationPipe()) repoDTO: RepoDTO,
-        @Res() res
-    ): Promise<any> {
-        let { email, repo, owner } = repoDTO;
-        const service = new AppService();
-        return await service.start({ repo, owner, email }, res);
-    }
+  @Post('schedule')
+  @HttpCode(HttpStatus.OK)
+  schedule(@Body() { owner, repo, email }: ScheduleReportDto): Promise<ScheduledReport> {
+    return this.repoService.sendReport({ owner, repo }, email);
+  }
 }

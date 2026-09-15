@@ -1,45 +1,71 @@
 # Package Validator API
 
-A NestJS service that checks a GitHub repository's dependencies for newer versions. Works together with [package-validator-ui](https://github.com/mmayadag/package-validator-ui).
+NestJS service that reads a public repository's `package.json` through the GitHub GraphQL API, compares every dependency with the npm registry and returns (optionally emails) a report of what is outdated.
 
-## How it works
+## Modules
 
-1. Checks that the `owner/repo` exists through the GitHub GraphQL API.
-2. Fetches the repository's `package.json` from the file tree.
-3. Runs [`npm-check-updates`](https://github.com/raineorshine/npm-check-updates) on it and returns the packages that have newer versions.
+| Module | Responsibility |
+|---|---|
+| `config` | Loads and validates environment variables into a typed `AppConfig` |
+| `github` | GraphQL client: repository lookup and `HEAD:package.json` contents |
+| `dependencies` | Runs `npm-check-updates` on the manifest in memory and groups results by section |
+| `report` | Renders the HTML and plain-text report, escaping every value |
+| `email` | Sends the report with SendGrid; a no-op when it is not configured |
+| `repo` | HTTP routes and the use case that ties the modules together |
+| `health` | `GET /health` liveness probe |
 
-Scheduled email reports (NestJS Schedule + SendGrid) are scaffolded in `src/tasks` but not finished yet.
+## Endpoints
 
-## API
+| Method | Path | Body | Success | Errors |
+|---|---|---|---|---|
+| `GET` | `/health` | | `200 { status: "ok" }` | |
+| `GET` | `/repo/isValid/:owner/:repo` | | `200 { valid }` | `400` invalid name |
+| `POST` | `/repo/isValid` | `{ owner, repo }` | `200 { valid }` | `400` invalid body |
+| `GET` | `/repo/details/:owner/:repo` | | `200` report | `404` unknown repo, `422` no or invalid `package.json` |
+| `POST` | `/repo/schedule` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | `200` report + `emailSent` | `400`, `404`, `422` |
 
-| Method | Endpoint | Body | Returns |
+A report looks like this:
+
+```json
+{
+  "owner": "mmayadag",
+  "repo": "bicycle-in-izmir",
+  "outdated": {
+    "dependencies": [{ "name": "express", "current": "^4.17.1", "latest": "^5.1.0" }]
+  },
+  "html": "<table>…</table>",
+  "text": "Outdated dependencies of mmayadag/bicycle-in-izmir …"
+}
+```
+
+`period` is validated and stored in the request contract; recurring delivery is not implemented yet, so the report is sent once.
+
+## Configuration
+
+| Variable | Required | Default | Description |
 |---|---|---|---|
-| `POST` | `/repo/isValid` | `{ "owner": "...", "repo": "..." }` | `{ "valid": boolean }` |
-| `GET` | `/repo/details/:owner/:repo` | — | Outdated dependencies report |
+| `TOKEN` | yes | | GitHub token used for the GraphQL API |
+| `GITHUB_ENDPOINT` | no | `https://api.github.com/graphql` | GraphQL endpoint (GitHub Enterprise) |
+| `SENDGRID_API_KEY` | no | | Enables email reports together with `EMAIL_FROM` |
+| `EMAIL_FROM` | no | | Verified sender address |
+| `EMAIL_SUBJECT` | no | `Dependency report` | Appended to `owner/repo` in the subject |
+| `PORT` | no | `3288` | HTTP port |
+| `CORS_ORIGIN` | no | | Comma-separated origins; CORS stays off when unset |
 
-## Tech
+Invalid values stop the application at startup. `.env` is read from `api/` and from the repository root.
 
-NestJS · TypeScript · GitHub GraphQL API (`graphql-request`) · npm-check-updates · SendGrid · Jest
+## Development
 
-## Running locally
+Requires Node.js 24.15+ and Yarn 1.
 
 ```bash
 yarn install
-yarn start:dev     # watch mode
-yarn test          # unit tests
+yarn start:dev      # http://localhost:3288, watch mode
+yarn lint           # oxlint
+yarn typecheck      # tsc --noEmit
+yarn test           # unit tests (Vitest)
+yarn test:e2e       # HTTP tests with GitHub and npm mocked
+yarn build          # dist/
 ```
 
-Create a `.env` file:
-
-```env
-GITHUB_ENDPOINT=https://api.github.com/graphql
-TOKEN=<github-token>
-SENDGRID_API_KEY=<optional, for email reports>
-EMAIL_FROM=
-EMAIL_SUBJECT=
-TEMP_PATH=./tmp
-```
-
-## License
-
-MIT
+The project is native ESM (`"type": "module"`, `module: nodenext`), so relative imports carry a `.js` extension.

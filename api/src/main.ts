@@ -1,17 +1,18 @@
+import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
-import { AppModule } from './app/app.module';
+import { AppModule } from './app.module.js';
+import { configureApp } from './app.setup.js';
+import type { AppConfig } from './config/configuration.js';
 
-async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(
-    AppModule,
-  );
-  app.useStaticAssets(join(__dirname, '..', 'public'));
-  app.setBaseViewsDir(join(__dirname, '..', 'views'));
-  app.setViewEngine('hbs');
+const app = configureApp(await NestFactory.create(AppModule));
+const config = app.get<ConfigService<AppConfig, true>>(ConfigService);
 
-  app.enableCors();
-  await app.listen(3288);
+const corsOrigin = config.get('corsOrigin', { infer: true });
+if (corsOrigin) {
+  app.enableCors({ origin: corsOrigin.split(',').map((origin) => origin.trim()) });
 }
-bootstrap();
+
+const port = config.get('port', { infer: true });
+await app.listen(port);
+Logger.log(`API listening on port ${port}`, 'Bootstrap');

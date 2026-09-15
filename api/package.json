@@ -1,84 +1,56 @@
 {
   "name": "package-validator-api",
   "version": "0.1.0",
-  "description": "Package validator api server",
+  "description": "Reports outdated package.json dependencies of a GitHub repository",
   "author": "Murat Mayadağ",
   "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.15"
+  },
   "scripts": {
-    "prebuild": "rimraf dist",
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
-    "lint": "eslint '{src,apps,libs,test}/**/*.ts' --fix",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watch",
-    "test:cov": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-e2e.json"
+    "start:prod": "node dist/main.js",
+    "lint": "oxlint src test",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.3",
     "@nestjs/config": "^12.0.0",
     "@nestjs/core": "^12.0.3",
     "@nestjs/platform-express": "^12.0.3",
-    "@nestjs/schedule": "^12.0.2",
-    "@nestjs/serve-static": "^12.0.0",
     "@sendgrid/mail": "^8.1.6",
-    "@types/dotenv": "^8.2.3",
-    "@types/graphql": "^14.5.0",
-    "@types/sendgrid": "^4.3.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "graphql": "^16.11.0",
     "graphql-request": "^7.4.0",
-    "hbs": "^4.3.1",
     "npm-check-updates": "^23.1.0",
     "reflect-metadata": "^0.2.2",
-    "rimraf": "^6.1.3",
-    "rxjs": "^7.8.2",
-    "rxjs-compat": "^6.6.7",
-    "graphql": "^16.11.0"
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^12.0.1",
     "@nestjs/schematics": "^12.0.2",
     "@nestjs/testing": "^12.0.3",
+    "@swc/core": "^1.16.2",
     "@types/express": "^5.0.6",
-    "@types/jest": "^30.0.0",
-    "@types/node": "^26.5.1",
+    "@types/node": "^24.0.0",
     "@types/supertest": "^7.2.1",
-    "@typescript-eslint/eslint-plugin": "^8.70.0",
-    "@typescript-eslint/parser": "^8.70.0",
-    "babel-eslint": "^10.1.0",
-    "eslint": "^10.10.0",
-    "eslint-config-airbnb": "^19.0.4",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-react": "^7.37.5",
-    "jest": "^30.5.1",
+    "@vitest/coverage-v8": "^5.0.0",
+    "oxlint": "^1.83.0",
     "prettier": "^3.9.6",
     "supertest": "^7.2.2",
-    "ts-jest": "^29.4.12",
-    "ts-loader": "^9.6.2",
-    "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "~6.0.3"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
-    "testRegex": ".spec.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "typescript": "~6.0.3",
+    "unplugin-swc": "^1.6.0",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0"
   }
 }

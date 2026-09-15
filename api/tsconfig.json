@@ -1,22 +1,25 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "types": ["node", "vitest/globals"],
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
     "experimentalDecorators": true,
-    "target": "es2017",
+    "emitDecoratorMetadata": true,
+    "declaration": false,
+    "removeComments": true,
     "sourceMap": true,
+    "skipLibCheck": true,
     "outDir": "./dist",
-    "incremental": true,
-    "strict": false,
-    "types": [
-      "node",
-      "jest"
-    ]
+    "rootDir": "."
   },
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src", "test", "vitest.config.ts", "vitest.config.e2e.ts"]
 }
