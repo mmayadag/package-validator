@@ -45,6 +45,13 @@
     color: var(--muted);
   }
 
+  @media (prefers-color-scheme: dark) {
+    /* the GitHub mark is solid black */
+    .logos img[src*='github'] {
+      filter: invert(1);
+    }
+  }
+
   h1 {
     margin: 0.75rem 0 0.5rem;
     font-size: clamp(1.75rem, 4vw, 2.5rem);
