@@ -3,7 +3,6 @@
     import Select from '../components/Select/Select.svelte';
     const { host, protocol } = document.location
     let api = `${protocol}//${host}`;
-    api = `https://validator.mayadag.com`;
     let repoURL = "";
     // https://github.com/mmayadag/package-validator-ui.git
     // https://github.com/mmayadag/s3-hello.git

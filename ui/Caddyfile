@@ -1,0 +1,11 @@
+:80 {
+	root * /srv
+	encode gzip
+
+	# API calls are same-origin; forward them to the NestJS container
+	reverse_proxy /repo/* api:3288
+
+	# Svelte bundle and static assets
+	try_files {path} /index.html
+	file_server
+}

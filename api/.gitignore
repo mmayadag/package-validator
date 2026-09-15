@@ -107,3 +107,5 @@ dist
 .env
 
 .scannerwork/
+# scratch clones written by the validator
+tmp/

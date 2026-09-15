@@ -1,0 +1,15 @@
+services:
+  api:
+    build: ./api
+    env_file: .env
+    expose:
+      - "3288"
+    restart: unless-stopped
+
+  ui:
+    build: ./ui
+    ports:
+      - "${UI_PORT:-8080}:80"
+    depends_on:
+      - api
+    restart: unless-stopped

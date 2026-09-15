@@ -4,7 +4,9 @@ import { createMail } from './email.template';
 
 const MailService = require('@sendgrid/mail');
 
-MailService.setApiKey(SENDGRID_API_KEY);
+if (SENDGRID_API_KEY) {
+  MailService.setApiKey(SENDGRID_API_KEY);
+}
 
 const from = EMAIL_FROM;
 const subject = EMAIL_SUBJECT;
