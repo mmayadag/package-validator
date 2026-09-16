@@ -4,7 +4,6 @@ import {
   type ChangeKind,
   type ConfirmedSubscription,
   type ErrorResponse,
-  type HealthResponse,
   type OutdatedDependencies,
   type OutdatedDependency,
   REPORT_PERIODS,
@@ -107,11 +106,6 @@ export class ConfirmedSubscriptionDto implements ConfirmedSubscription {
 
   @ApiProperty()
   subscription!: SubscriptionSummaryDto;
-}
-
-export class HealthDto implements HealthResponse {
-  @ApiProperty({ enum: ['ok'] })
-  status!: 'ok';
 }
 
 export class ErrorDto implements ErrorResponse {

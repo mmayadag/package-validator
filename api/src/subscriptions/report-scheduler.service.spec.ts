@@ -1,9 +1,9 @@
 import type { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../config/configuration.js';
 import type { EmailService } from '../email/email.service.js';
-import type { Subscription, SubscriptionsRepository } from '../subscriptions/subscriptions.repository.js';
+import type { ReportService } from '../report/report.service.js';
 import { ReportSchedulerService } from './report-scheduler.service.js';
-import type { RepoService } from './repo.service.js';
+import type { Subscription, SubscriptionsRepository } from './subscriptions.repository.js';
 
 const subscription = (overrides: Partial<Subscription>): Subscription => ({
   id: 1,
@@ -21,7 +21,7 @@ const subscription = (overrides: Partial<Subscription>): Subscription => ({
 describe('ReportSchedulerService', () => {
   const now = 1_000_000;
   const report = { owner: 'mmayadag', repo: 'package-validator', outdated: {}, html: '', text: '' };
-  const repoService = { buildReport: vi.fn() };
+  const reports = { buildReport: vi.fn() };
   const subscriptions = { findDue: vi.fn(), markSent: vi.fn(), deleteExpiredPending: vi.fn() };
   const email = { enabled: true, sendReport: vi.fn() };
   const config = { get: () => 'https://pv.example.com' };
@@ -32,7 +32,7 @@ describe('ReportSchedulerService', () => {
     email.enabled = true;
     subscriptions.deleteExpiredPending.mockReturnValue(0);
     scheduler = new ReportSchedulerService(
-      repoService as unknown as RepoService,
+      reports as unknown as ReportService,
       subscriptions as unknown as SubscriptionsRepository,
       email as unknown as EmailService,
       config as unknown as ConfigService<AppConfig, true>,
@@ -50,7 +50,7 @@ describe('ReportSchedulerService', () => {
 
   it('emails every due subscription and records the delivery', async () => {
     subscriptions.findDue.mockReturnValue([subscription({ id: 1 }), subscription({ id: 2, repo: 'other', token: 'token-2' })]);
-    repoService.buildReport.mockResolvedValue(report);
+    reports.buildReport.mockResolvedValue(report);
     email.sendReport.mockResolvedValue(true);
 
     await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 2, sent: 2, failed: 0, expired: 0 });
@@ -68,7 +68,7 @@ describe('ReportSchedulerService', () => {
 
   it('keeps going when one repository fails', async () => {
     subscriptions.findDue.mockReturnValue([subscription({ id: 1, repo: 'deleted' }), subscription({ id: 2 })]);
-    repoService.buildReport.mockRejectedValueOnce(new Error('not found')).mockResolvedValueOnce(report);
+    reports.buildReport.mockRejectedValueOnce(new Error('not found')).mockResolvedValueOnce(report);
     email.sendReport.mockResolvedValue(true);
 
     await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 2, sent: 1, failed: 1, expired: 0 });
@@ -78,7 +78,7 @@ describe('ReportSchedulerService', () => {
 
   it('leaves a subscription due when the email could not be sent', async () => {
     subscriptions.findDue.mockReturnValue([subscription({})]);
-    repoService.buildReport.mockResolvedValue(report);
+    reports.buildReport.mockResolvedValue(report);
     email.sendReport.mockResolvedValue(false);
 
     await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 1, sent: 0, failed: 1, expired: 0 });
@@ -88,7 +88,7 @@ describe('ReportSchedulerService', () => {
   it('skips a run while the previous one is still in progress', async () => {
     let finishBuild: (value: typeof report) => void = () => {};
     subscriptions.findDue.mockReturnValue([subscription({})]);
-    repoService.buildReport.mockReturnValue(new Promise((resolve) => (finishBuild = resolve)));
+    reports.buildReport.mockReturnValue(new Promise((resolve) => (finishBuild = resolve)));
     email.sendReport.mockResolvedValue(true);
 
     const first = scheduler.sendDueReports(now);

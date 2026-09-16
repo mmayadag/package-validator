@@ -1,7 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { HealthResponse } from '@package-validator/contracts';
 import { SkipRateLimit } from '../common/rate-limit/rate-limit.decorator.js';
-import { HealthDto } from '../repo/dto/responses.dto.js';
+import { HealthDto } from './health.dto.js';
 
 @Controller('health')
 @ApiTags('health')
@@ -11,7 +12,7 @@ export class HealthController {
   @Get()
   @ApiOperation({ summary: 'Liveness probe' })
   @ApiOkResponse({ type: HealthDto })
-  check(): { status: 'ok' } {
+  check(): HealthResponse {
     return { status: 'ok' };
   }
 }

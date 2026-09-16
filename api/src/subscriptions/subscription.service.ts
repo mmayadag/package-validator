@@ -1,80 +1,31 @@
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type {
   ConfirmedSubscription,
-  RepoReport,
   ReportPeriod,
-  RepositoryRef,
   ScheduledReport,
   SubscriptionRequest,
   SubscriptionSummary,
 } from '@package-validator/contracts';
 import type { AppConfig } from '../config/configuration.js';
-import { DependencyCheckerService, type PackageManifest } from '../dependencies/dependency-checker.service.js';
 import { EmailService } from '../email/email.service.js';
-import { GithubService } from '../github/github.service.js';
-import { type RenderedReport, renderReport } from '../report/render-report.js';
-import { confirmUrl, unsubscribeUrl } from '../subscriptions/subscription-links.js';
-import { HOUR_MS, type Subscription, SubscriptionsRepository } from '../subscriptions/subscriptions.repository.js';
+import type { RenderedReport } from '../report/render-report.js';
+import { ReportService } from '../report/report.service.js';
+import { confirmUrl, unsubscribeUrl } from './subscription-links.js';
+import { HOUR_MS, type Subscription, SubscriptionsRepository } from './subscriptions.repository.js';
 
-export const REPORT_CACHE_TTL_MS = HOUR_MS;
-/** Upper bound on cached reports; the oldest entry is evicted beyond it. */
-const REPORT_CACHE_MAX_ENTRIES = 500;
-
+/** Lifecycle of an email subscription: request, confirmation, delivery and removal. */
 @Injectable()
-export class RepoService {
+export class SubscriptionService {
   private readonly publicUrl: string;
-  private readonly reports = new Map<string, { report: RepoReport; expiresAt: number }>();
 
   constructor(
-    private readonly github: GithubService,
-    private readonly dependencyChecker: DependencyCheckerService,
+    private readonly reports: ReportService,
     private readonly email: EmailService,
     private readonly subscriptions: SubscriptionsRepository,
     config: ConfigService<AppConfig, true>,
   ) {
     this.publicUrl = config.get('publicUrl', { infer: true });
-  }
-
-  isValid(ref: RepositoryRef): Promise<boolean> {
-    return this.github.repositoryExists(ref);
-  }
-
-  /**
-   * Builds the report, reusing one built within the last hour for the same
-   * repository so repeated requests and scheduled deliveries do not hit
-   * GitHub and the npm registry again.
-   */
-  async buildReport({ owner, repo }: RepositoryRef): Promise<RepoReport> {
-    const key = `${owner}/${repo}`.toLowerCase();
-    const cached = this.reports.get(key);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.report;
-    }
-
-    const report = await this.fetchReport({ owner, repo });
-    this.reports.set(key, { report, expiresAt: Date.now() + REPORT_CACHE_TTL_MS });
-    if (this.reports.size > REPORT_CACHE_MAX_ENTRIES) {
-      const oldest = this.reports.keys().next().value;
-      if (oldest !== undefined) this.reports.delete(oldest);
-    }
-    return report;
-  }
-
-  private async fetchReport(ref: RepositoryRef): Promise<RepoReport> {
-    const { owner, repo } = ref;
-
-    if (!(await this.github.repositoryExists(ref))) {
-      throw new NotFoundException(`Repository ${owner}/${repo} does not exist or is not public`);
-    }
-
-    const raw = await this.github.getPackageJson(ref);
-    if (raw === null) {
-      throw new UnprocessableEntityException(`${owner}/${repo} has no package.json on its default branch`);
-    }
-
-    const outdated = await this.dependencyChecker.findOutdated(parseManifest(raw));
-    return { ...ref, outdated, generatedAt: new Date().toISOString(), ...renderReport(ref, outdated) };
   }
 
   /**
@@ -83,7 +34,7 @@ export class RepoService {
    */
   async subscribe({ owner, repo, email, period }: SubscriptionRequest): Promise<ScheduledReport> {
     const ref = { owner, repo };
-    const report = await this.buildReport(ref);
+    const report = await this.reports.buildReport(ref);
     const subscription = this.subscriptions.upsert({ ...ref, email, periodHours: period });
 
     if (subscription.confirmedAt === null) {
@@ -110,7 +61,7 @@ export class RepoService {
     const ref = { owner: subscription.owner, repo: subscription.repo };
     if (subscription.lastSentAt === null) {
       try {
-        await this.deliver(subscription, await this.buildReport(ref));
+        await this.deliver(subscription, await this.reports.buildReport(ref));
       } catch {
         // The repository may have gone away since; the scheduler retries on its next run.
       }
@@ -151,16 +102,4 @@ function summarize(subscription: Subscription | null): SubscriptionSummary {
     periodHours: periodHours as ReportPeriod,
     nextReportAt: lastSentAt === null ? null : new Date(lastSentAt + periodHours * HOUR_MS).toISOString(),
   };
-}
-
-function parseManifest(raw: string): PackageManifest {
-  try {
-    const manifest: unknown = JSON.parse(raw);
-    if (typeof manifest !== 'object' || manifest === null || Array.isArray(manifest)) {
-      throw new TypeError('not an object');
-    }
-    return manifest as PackageManifest;
-  } catch {
-    throw new UnprocessableEntityException('package.json is not valid JSON');
-  }
 }

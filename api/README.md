@@ -9,10 +9,10 @@ NestJS service that reads a public repository's `package.json` through the GitHu
 | `config` | Loads and validates environment variables into a typed `AppConfig` |
 | `github` | GraphQL client: repository lookup and `HEAD:package.json` contents |
 | `dependencies` | Reads the `latest` dist-tag of every declared package from the npm registry (8 requests in flight, 5 s timeout) and groups what is outdated by section |
-| `report` | Renders the HTML and plain-text report, escaping every value |
+| `report` | `ReportService` builds the report (GitHub → registry → render) and keeps it for an hour; the renderer escapes every value |
 | `email` | Confirmation requests and reports through SendGrid; a no-op when it is not configured |
-| `subscriptions` | SQLite storage for report subscriptions (`node:sqlite`, no native dependency), with pending/active state |
-| `repo` | HTTP routes (`RepoController`, `SubscriptionsController`) and the use cases that tie the modules together |
+| `subscriptions` | `SubscriptionService` (request, confirm, deliver, remove), the hourly `ReportSchedulerService` and the SQLite store (`node:sqlite`, no native dependency) |
+| `repo` | HTTP layer only: `RepoController`, `SubscriptionsController` and the DTOs |
 | `health` | `GET /health` liveness probe |
 
 ## Endpoints
