@@ -7,6 +7,7 @@ describe('loadConfig', () => {
       corsOrigin: undefined,
       publicUrl: 'http://localhost:8080',
       databasePath: 'data/package-validator.db',
+      npmRegistry: 'https://registry.npmjs.org',
       github: { endpoint: 'https://api.github.com/graphql', token: 'ghp_test' },
       email: { apiKey: undefined, from: undefined, subject: 'Dependency report' },
     });

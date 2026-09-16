@@ -19,6 +19,8 @@ export interface AppConfig {
   /** Address of the UI, used for links in emails. No trailing slash. */
   publicUrl: string;
   databasePath: string;
+  /** npm registry (or mirror) queried for latest versions. No trailing slash. */
+  npmRegistry: string;
   github: {
     endpoint: string;
     token: string;
@@ -52,6 +54,10 @@ class EnvironmentVariables {
   @IsOptional()
   @IsUrl({ require_tld: false })
   GITHUB_ENDPOINT?: string;
+
+  @IsOptional()
+  @IsUrl({ require_tld: false, require_protocol: true })
+  NPM_REGISTRY?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -91,6 +97,7 @@ export function loadConfig(env: Record<string, unknown>): AppConfig {
     corsOrigin: vars.CORS_ORIGIN,
     publicUrl: (vars.PUBLIC_URL ?? 'http://localhost:8080').replace(/\/+$/, ''),
     databasePath: vars.DATABASE_PATH ?? 'data/package-validator.db',
+    npmRegistry: (vars.NPM_REGISTRY ?? 'https://registry.npmjs.org').replace(/\/+$/, ''),
     github: {
       endpoint: vars.GITHUB_ENDPOINT ?? 'https://api.github.com/graphql',
       token: vars.TOKEN,

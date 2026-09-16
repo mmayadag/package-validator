@@ -16,7 +16,7 @@
     { "id": "caddy", "type": "frontend", "label": "Caddy", "sublabel": "ui container :80", "pos": [260, 300], "size": [140, 60] },
     { "id": "bundle", "type": "frontend", "label": "Static bundle", "sublabel": "Vite build", "pos": [260, 450], "size": [140, 60] },
     { "id": "api", "type": "backend", "label": "NestJS API", "sublabel": "api container :3288", "pos": [490, 300], "size": [150, 60], "tag": "rate limited" },
-    { "id": "checker", "type": "backend", "label": "Dependency checker", "sublabel": "npm-check-updates", "pos": [720, 300], "size": [160, 60] },
+    { "id": "checker", "type": "backend", "label": "Dependency checker", "sublabel": "dist-tags + semver", "pos": [720, 300], "size": [160, 60] },
     { "id": "mailer", "type": "backend", "label": "Report mailer", "sublabel": "hourly schedule", "pos": [720, 450], "size": [160, 60] },
     { "id": "github", "type": "external", "label": "GitHub GraphQL", "sublabel": "repo + package.json", "pos": [950, 150], "size": [150, 60] },
     { "id": "registry", "type": "external", "label": "npm registry", "sublabel": "latest versions", "pos": [950, 300], "size": [150, 60] },
