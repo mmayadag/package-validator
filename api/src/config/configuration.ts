@@ -1,7 +1,7 @@
 // class-validator decorators need the Reflect metadata API even outside a Nest context.
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
-import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
+import { IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
 
 export interface AppConfig {
   port: number;
@@ -11,6 +11,8 @@ export interface AppConfig {
   databasePath: string;
   /** npm registry (or mirror) queried for latest versions. No trailing slash. */
   npmRegistry: string;
+  /** Whether Swagger UI and the OpenAPI document are served under /docs. */
+  docsEnabled: boolean;
   github: {
     endpoint: string;
     token: string;
@@ -53,6 +55,11 @@ class EnvironmentVariables {
   @IsNotEmpty()
   TOKEN!: string;
 
+  // Kept as a string: implicit conversion would turn "false" into true.
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  DOCS_ENABLED?: 'true' | 'false';
+
   @IsOptional()
   @IsString()
   SENDGRID_API_KEY?: string;
@@ -86,6 +93,7 @@ export function loadConfig(env: Record<string, unknown>): AppConfig {
     publicUrl: (vars.PUBLIC_URL ?? 'http://localhost:8080').replace(/\/+$/, ''),
     databasePath: vars.DATABASE_PATH ?? 'data/package-validator.db',
     npmRegistry: (vars.NPM_REGISTRY ?? 'https://registry.npmjs.org').replace(/\/+$/, ''),
+    docsEnabled: vars.DOCS_ENABLED !== 'false',
     github: {
       endpoint: vars.GITHUB_ENDPOINT ?? 'https://api.github.com/graphql',
       token: vars.TOKEN,

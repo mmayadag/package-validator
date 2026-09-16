@@ -1,7 +1,9 @@
 import { type INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { requestLog } from './common/request-log/request-log.middleware.js';
+import type { AppConfig } from './config/configuration.js';
 import { DOCS_PATH, setupOpenApi } from './openapi.js';
 
 /** Settings shared by the real server and the e2e tests. */
@@ -10,6 +12,7 @@ export function configureApp(app: INestApplication): INestApplication {
   // X-Forwarded-For so rate limits apply to the real client address.
   const express = app.getHttpAdapter().getInstance() as { set(setting: string, value: unknown): void };
   express.set('trust proxy', 'loopback, linklocal, uniquelocal');
+  const docsEnabled = app.get<ConfigService<AppConfig, true>>(ConfigService).get('docsEnabled', { infer: true });
 
   // First, so every later log line (and the response) carries the request id.
   app.use(requestLog());
@@ -23,7 +26,7 @@ export function configureApp(app: INestApplication): INestApplication {
     },
   });
   app.use((request: Request, response: Response, next: NextFunction) => {
-    const isDocs = request.path === `/${DOCS_PATH}` || request.path.startsWith(`/${DOCS_PATH}/`);
+    const isDocs = docsEnabled && (request.path === `/${DOCS_PATH}` || request.path.startsWith(`/${DOCS_PATH}/`));
     return (isDocs ? docsHeaders : apiHeaders)(request, response, next);
   });
 
@@ -37,6 +40,8 @@ export function configureApp(app: INestApplication): INestApplication {
     }),
   );
   app.enableShutdownHooks();
-  setupOpenApi(app);
+  if (docsEnabled) {
+    setupOpenApi(app);
+  }
   return app;
 }
