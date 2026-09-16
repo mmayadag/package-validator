@@ -1,6 +1,7 @@
 import { type INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
+import { requestLog } from './common/request-log/request-log.middleware.js';
 import { DOCS_PATH, setupOpenApi } from './openapi.js';
 
 /** Settings shared by the real server and the e2e tests. */
@@ -9,6 +10,9 @@ export function configureApp(app: INestApplication): INestApplication {
   // X-Forwarded-For so rate limits apply to the real client address.
   const express = app.getHttpAdapter().getInstance() as { set(setting: string, value: unknown): void };
   express.set('trust proxy', 'loopback, linklocal, uniquelocal');
+
+  // First, so every later log line (and the response) carries the request id.
+  app.use(requestLog());
 
   // The API only serves JSON, so the strict helmet defaults apply unchanged.
   // Swagger UI boots from an inline script, so /docs gets a relaxed script-src.

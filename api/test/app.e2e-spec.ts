@@ -15,6 +15,7 @@ describe('API (e2e)', () => {
   const github = { repositoryExists: vi.fn(), getPackageJson: vi.fn() };
   const dependencyChecker = { findOutdated: vi.fn() };
   const email = { sendReport: vi.fn(), sendConfirmation: vi.fn() };
+  const logged = vi.fn();
   let moduleRef: TestingModule;
   let app: INestApplication;
 
@@ -30,7 +31,10 @@ describe('API (e2e)', () => {
       .overrideProvider(EmailService)
       .useValue(email)
       .compile();
-    app = configureApp(moduleRef.createNestApplication());
+    app = moduleRef.createNestApplication({ logger: false });
+    // Only the request log is observed; everything else stays silent.
+    app.useLogger({ log: logged, error: () => {}, warn: () => {} });
+    configureApp(app);
     await app.init();
   });
 
@@ -54,6 +58,27 @@ describe('API (e2e)', () => {
   };
 
   it('GET /health', () => request(app.getHttpServer()).get('/health').expect(200, { status: 'ok' }));
+
+  describe('request log', () => {
+    it('answers every request with an id and logs one line per request', async () => {
+      const { headers } = await request(app.getHttpServer()).post('/v1/subscriptions/not-a-token/confirm').expect(400);
+
+      expect(headers['x-request-id']).toMatch(/^[0-9a-f-]{36}$/);
+      expect(logged).toHaveBeenCalledTimes(1);
+      expect(logged).toHaveBeenCalledWith(
+        expect.stringMatching(/^POST \/v1\/subscriptions\/not-a-token\/confirm 400 \d+ms$/),
+        expect.objectContaining({ requestId: headers['x-request-id'], status: 400, ip: expect.any(String) }),
+        'HTTP',
+      );
+    });
+
+    it('keeps the id a caller sends', async () => {
+      const { headers } = await request(app.getHttpServer()).get('/health').set('X-Request-Id', 'trace-42').expect(200);
+
+      expect(headers['x-request-id']).toBe('trace-42');
+      expect(logged).not.toHaveBeenCalled();
+    });
+  });
 
   describe('OpenAPI', () => {
     it('serves the document with every route', async () => {
