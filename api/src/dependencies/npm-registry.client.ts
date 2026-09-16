@@ -76,5 +76,5 @@ export class NpmRegistryClient {
 
 /** Scoped names keep the `@` and encode only the slash, which is what the registry expects. */
 export function encodePackageName(name: string): string {
-  return name.replace('/', '%2F');
+  return name.replaceAll('/', '%2F');
 }
