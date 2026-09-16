@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { REPORT_PERIODS, type ReportPeriod, type ScheduledReport, isValidRepository, scheduleReport } from '../lib/api';
+  import {
+    REPORT_PERIODS,
+    type ReportPeriod,
+    type ScheduledReport,
+    isValidRepository,
+    scheduleReport,
+  } from '../lib/api';
   import { parseRepository } from '../lib/git-url';
   import ReportTable from './ReportTable.svelte';
 

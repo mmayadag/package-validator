@@ -55,10 +55,18 @@ describe('confirmSubscription', () => {
   });
 
   it('posts to the confirm endpoint and returns the subscription', async () => {
-    const body = { owner: 'a', repo: 'b', email: 'dev@example.com', subscription: { status: 'active', periodHours: 24, nextReportAt: null } };
+    const body = {
+      owner: 'a',
+      repo: 'b',
+      email: 'dev@example.com',
+      subscription: { status: 'active', periodHours: 24, nextReportAt: null },
+    };
     const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
 
     await expect(confirmSubscription('abc_DEF-123')).resolves.toEqual(body);
-    expect(fetch).toHaveBeenCalledWith('/v1/subscriptions/abc_DEF-123/confirm', expect.objectContaining({ method: 'POST' }));
+    expect(fetch).toHaveBeenCalledWith(
+      '/v1/subscriptions/abc_DEF-123/confirm',
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 });

@@ -5,7 +5,9 @@
 
   const sections = $derived(Object.entries(report.outdated));
   const total = $derived(sections.reduce((sum, [, packages]) => sum + packages.length, 0));
-  const majors = $derived(sections.flatMap(([, packages]) => packages).filter(({ change }) => change === 'major').length);
+  const majors = $derived(
+    sections.flatMap(([, packages]) => packages).filter(({ change }) => change === 'major').length,
+  );
   const generated = $derived(new Date(report.generatedAt).toLocaleString());
 </script>
 
@@ -44,7 +46,10 @@
         <tbody>
           {#each packages as pkg (pkg.name)}
             <tr>
-              <td><a href={`https://www.npmjs.com/package/${pkg.name}`} rel="noreferrer" target="_blank">{pkg.name}</a></td>
+              <td
+                ><a href={`https://www.npmjs.com/package/${pkg.name}`} rel="noreferrer" target="_blank">{pkg.name}</a
+                ></td
+              >
               <td><code>{pkg.current}</code></td>
               <td><code>{pkg.latest}</code></td>
               <td><span class="change" data-kind={pkg.change}>{pkg.change}</span></td>

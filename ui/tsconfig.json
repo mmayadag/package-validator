@@ -1,26 +1,12 @@
 {
-  "extends": [
-    "@tsconfig/svelte/tsconfig.json",
-    "../tsconfig.base.json"
-  ],
+  "extends": ["@tsconfig/svelte/tsconfig.json", "../tsconfig.base.json"],
   "compilerOptions": {
-    "lib": [
-      "ES2023",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "types": [
-      "svelte",
-      "vite/client"
-    ],
+    "types": ["svelte", "vite/client"],
     "noEmit": true,
     "verbatimModuleSyntax": true
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.svelte",
-    "vite.config.ts"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.svelte", "vite.config.ts"]
 }

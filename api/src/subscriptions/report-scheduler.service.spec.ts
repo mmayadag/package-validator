@@ -49,7 +49,10 @@ describe('ReportSchedulerService', () => {
   });
 
   it('emails every due subscription and records the delivery', async () => {
-    subscriptions.findDue.mockReturnValue([subscription({ id: 1 }), subscription({ id: 2, repo: 'other', token: 'token-2' })]);
+    subscriptions.findDue.mockReturnValue([
+      subscription({ id: 1 }),
+      subscription({ id: 2, repo: 'other', token: 'token-2' }),
+    ]);
     reports.buildReport.mockResolvedValue(report);
     email.sendReport.mockResolvedValue(true);
 

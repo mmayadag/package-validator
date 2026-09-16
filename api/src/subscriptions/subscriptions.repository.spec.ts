@@ -103,12 +103,9 @@ describe('SubscriptionsRepository', () => {
         period_hours INTEGER NOT NULL, token TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL, last_sent_at INTEGER,
         UNIQUE (owner, repo, email)
       )`);
-    legacy.prepare('INSERT INTO subscriptions VALUES (1, ?, ?, ?, 24, ?, 0, NULL)').run(
-      input.owner,
-      input.repo,
-      input.email,
-      't'.repeat(32),
-    );
+    legacy
+      .prepare('INSERT INTO subscriptions VALUES (1, ?, ?, ?, 24, ?, 0, NULL)')
+      .run(input.owner, input.repo, input.email, 't'.repeat(32));
     legacy.close();
 
     const migrated = new SubscriptionsRepository({ get: () => path } as unknown as ConfigService<AppConfig, true>);

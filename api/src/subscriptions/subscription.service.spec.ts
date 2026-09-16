@@ -7,7 +7,13 @@ import { SubscriptionService } from './subscription.service.js';
 import { type Subscription, SubscriptionsRepository } from './subscriptions.repository.js';
 
 const ref = { owner: 'mmayadag', repo: 'package-validator' };
-const report = { ...ref, outdated: {}, generatedAt: '2026-09-16T00:00:00.000Z', html: '<table></table>', text: 'report' };
+const report = {
+  ...ref,
+  outdated: {},
+  generatedAt: '2026-09-16T00:00:00.000Z',
+  html: '<table></table>',
+  text: 'report',
+};
 const stored = (overrides: Partial<Subscription> = {}): Subscription => ({
   id: 7,
   ...ref,
@@ -23,7 +29,13 @@ const stored = (overrides: Partial<Subscription> = {}): Subscription => ({
 describe('SubscriptionService', () => {
   const reports = { buildReport: vi.fn() };
   const email = { sendReport: vi.fn(), sendConfirmation: vi.fn() };
-  const subscriptions = { upsert: vi.fn(), markSent: vi.fn(), deleteByToken: vi.fn(), confirm: vi.fn(), findByToken: vi.fn() };
+  const subscriptions = {
+    upsert: vi.fn(),
+    markSent: vi.fn(),
+    deleteByToken: vi.fn(),
+    confirm: vi.fn(),
+    findByToken: vi.fn(),
+  };
   let service: SubscriptionService;
 
   beforeEach(async () => {
@@ -113,9 +125,18 @@ describe('SubscriptionService', () => {
       const result = await service.confirm('secret-token');
 
       expect(subscriptions.confirm).toHaveBeenCalledWith('secret-token');
-      expect(email.sendReport).toHaveBeenCalledWith('dev@example.com', ref, report, expect.stringContaining('unsubscribe='));
+      expect(email.sendReport).toHaveBeenCalledWith(
+        'dev@example.com',
+        ref,
+        report,
+        expect.stringContaining('unsubscribe='),
+      );
       expect(subscriptions.markSent).toHaveBeenCalledWith(7);
-      expect(result).toEqual({ ...ref, email: 'dev@example.com', subscription: { status: 'active', periodHours: 12, nextReportAt: expect.any(String) } });
+      expect(result).toEqual({
+        ...ref,
+        email: 'dev@example.com',
+        subscription: { status: 'active', periodHours: 12, nextReportAt: expect.any(String) },
+      });
     });
 
     it('does not resend the report when confirming twice', async () => {

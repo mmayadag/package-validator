@@ -8,19 +8,19 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
-    labels: ["type: chore"]
+    labels: ['type: chore']
     commit-message:
-      prefix: "chore(deps)"
-      prefix-development: "chore(deps-dev)"
+      prefix: 'chore(deps)'
+      prefix-development: 'chore(deps-dev)'
     ignore:
       # TypeScript 7.0 ships only tsc; the compiler API the toolchain needs returns in 7.1
       - dependency-name: typescript
-        update-types: ["version-update:semver-major"]
+        update-types: ['version-update:semver-major']
     groups:
       nestjs:
-        patterns: ["@nestjs/*"]
+        patterns: ['@nestjs/*']
       svelte:
-        patterns: ["svelte", "svelte-check", "@sveltejs/*", "@tsconfig/svelte"]
+        patterns: ['svelte', 'svelte-check', '@sveltejs/*', '@tsconfig/svelte']
       tooling:
         dependency-type: development
 
@@ -29,18 +29,18 @@ updates:
     schedule:
       interval: weekly
       day: monday
-    labels: ["type: chore", "area: infra"]
+    labels: ['type: chore', 'area: infra']
     commit-message:
-      prefix: "ci(deps)"
+      prefix: 'ci(deps)'
     groups:
       actions:
-        patterns: ["*"]
+        patterns: ['*']
 
   - package-ecosystem: docker
     directories: [/api, /ui]
     schedule:
       interval: weekly
       day: monday
-    labels: ["type: chore", "area: infra"]
+    labels: ['type: chore', 'area: infra']
     commit-message:
-      prefix: "chore(docker)"
+      prefix: 'chore(docker)'

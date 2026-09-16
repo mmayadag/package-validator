@@ -5,7 +5,7 @@ services:
       dockerfile: api/Dockerfile
     env_file: .env
     expose:
-      - "3288"
+      - '3288'
     volumes:
       # SQLite database with the report subscriptions
       - api-data:/app/api/data
@@ -16,7 +16,7 @@ services:
       context: .
       dockerfile: ui/Dockerfile
     ports:
-      - "${UI_PORT:-8080}:80"
+      - '${UI_PORT:-8080}:80'
     depends_on:
       api:
         # the api image defines a HEALTHCHECK on GET /health
