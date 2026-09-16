@@ -1,16 +1,17 @@
 Closes #
 
-## What changed
+## What
 
-<!-- One or two sentences a changelog reader would understand. -->
+<!-- One or two sentences on what changed. -->
 
-## How it was verified
+## Why
 
-<!-- Tests added or updated, manual checks, screenshots for UI changes. -->
+<!-- The problem this solves, if the issue does not already say it. -->
 
-## Checklist
+## How to verify
 
-- [ ] Commits follow `type(#issue): subject`
-- [ ] Tests cover the change (`make test`)
-- [ ] Lint and type checks pass (`make lint`)
-- [ ] Documentation and OpenAPI decorators reflect the change
+<!-- Commands to run or steps to click through. Screenshots for UI changes. -->
+
+## Notes
+
+<!-- Breaking changes, follow-ups, anything the reviewer should know. Remove if empty. -->

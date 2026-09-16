@@ -1,0 +1,32 @@
+name: Task
+description: A planned change, written before the work starts
+labels: []
+body:
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: The problem or the gap, in one or two sentences.
+      placeholder: The UI keeps a hand-written copy of the API types and they have drifted once already.
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What
+      description: The change, as a few bullets. Say what is out of scope if it is not obvious.
+      placeholder: |
+        - Shared `contracts` package with the report and subscription types
+        - API DTOs and the UI client import from it
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Checks a reviewer can run or observe. The pull request is done when all of them hold.
+      placeholder: |
+        - [ ] No API response type is declared twice
+        - [ ] `make lint && make test` pass
+    validations:
+      required: true
