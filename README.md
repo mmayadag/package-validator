@@ -51,7 +51,7 @@ The browser talks to a single origin. Caddy serves the Svelte bundle and proxies
 
 | Directory | Role | Stack |
 |---|---|---|
-| [`api/`](api) | REST API | NestJS 12 · TypeScript 6 (ESM, strict) · graphql-request · npm-check-updates · SendGrid · Vitest |
+| [`api/`](api) | REST API | NestJS 12 · TypeScript 6 (ESM, strict) · graphql-request · npm registry · SendGrid · Vitest |
 | [`ui/`](ui) | Single-page app | Svelte 5 (runes) · TypeScript · Vite |
 | [`packages/contracts/`](packages/contracts) | Types and constants shared by both, so the API and the UI cannot drift apart | TypeScript |
 | [`docs/`](docs) | Architecture diagram published to GitHub Pages | archify |
@@ -114,7 +114,7 @@ Copy [`.env.example`](.env.example) to `.env`. Only `TOKEN` is required; the rep
 │   ├── src/
 │   │   ├── config/       typed, validated environment
 │   │   ├── github/       GraphQL client
-│   │   ├── dependencies/ npm-check-updates wrapper
+│   │   ├── dependencies/ npm registry client and outdated check
 │   │   ├── report/       HTML and text rendering
 │   │   ├── email/        SendGrid delivery
 │   │   ├── repo/         routes, DTOs and use case

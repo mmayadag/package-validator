@@ -8,7 +8,7 @@ NestJS service that reads a public repository's `package.json` through the GitHu
 |---|---|
 | `config` | Loads and validates environment variables into a typed `AppConfig` |
 | `github` | GraphQL client: repository lookup and `HEAD:package.json` contents |
-| `dependencies` | Runs `npm-check-updates` on the manifest in memory and groups results by section |
+| `dependencies` | Reads the `latest` dist-tag of every declared package from the npm registry (8 requests in flight, 5 s timeout) and groups what is outdated by section |
 | `report` | Renders the HTML and plain-text report, escaping every value |
 | `email` | Confirmation requests and reports through SendGrid; a no-op when it is not configured |
 | `subscriptions` | SQLite storage for report subscriptions (`node:sqlite`, no native dependency), with pending/active state |
@@ -72,6 +72,7 @@ The client address comes from `X-Forwarded-For` when the request arrives from a 
 |---|---|---|---|
 | `TOKEN` | yes | | GitHub token used for the GraphQL API |
 | `GITHUB_ENDPOINT` | no | `https://api.github.com/graphql` | GraphQL endpoint (GitHub Enterprise) |
+| `NPM_REGISTRY` | no | `https://registry.npmjs.org` | Registry or mirror queried for latest versions |
 | `SENDGRID_API_KEY` | no | | Enables email reports together with `EMAIL_FROM` |
 | `EMAIL_FROM` | no | | Verified sender address |
 | `EMAIL_SUBJECT` | no | `Dependency report` | Appended to `owner/repo` in the subject |
