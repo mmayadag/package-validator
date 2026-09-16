@@ -4,7 +4,7 @@ Thanks for taking the time. This document covers the workflow; the architecture 
 
 ## Workflow
 
-1. **Open an issue first.** Every change, including your own, starts as a short issue on the [project board](https://github.com/users/mmayadag/projects/5). Bugs and features have [forms](https://github.com/mmayadag/package-validator/issues/new/choose).
+1. **Open an issue first.** Every change, including your own, starts as a short issue on the [project board](https://github.com/users/mmayadag/projects/5). Use the [Task form](https://github.com/mmayadag/package-validator/issues/new?template=task.yml): *Why* (the problem, one or two sentences), *What* (the change, a few bullets) and *Acceptance criteria* (checks a reviewer can run). Bugs and feature ideas have their own [forms](https://github.com/mmayadag/package-validator/issues/new/choose).
 2. **Branch from `main`** and keep the change focused on that one issue.
 3. **Commit with [Conventional Commits](https://www.conventionalcommits.org/)**, using the issue number as the scope and closing it from the body:
 
@@ -15,7 +15,7 @@ Thanks for taking the time. This document covers the workflow; the architecture 
    ```
 
    Types in use: `feat`, `fix`, `refactor`, `test`, `docs`, `ci`, `chore`. Releases and the changelog are generated from these messages, so the subject line should describe the change for a reader of the changelog.
-4. **Open a pull request.** CI runs lint, type checks, unit and e2e tests for both apps and builds the Docker images; all of it must pass.
+4. **Open a pull request** with the template: what changed, why, and how to verify it. Keep it as short as the change allows. CI runs lint, type checks, unit and e2e tests for both apps and builds the Docker images; all of it must pass.
 
 ## Development
 
