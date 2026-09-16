@@ -19,6 +19,9 @@
     "check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@package-validator/contracts": "0.1.0"
+  },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tsconfig/svelte": "^5.0.8",

@@ -1,40 +1,22 @@
-import type { RepositoryRef } from './git-url';
+import {
+  type ConfirmedSubscription,
+  REPORT_PERIODS,
+  type ReportPeriod,
+  type RepositoryRef,
+  type ScheduledReport,
+  type SubscriptionRequest,
+  type ValidityResponse,
+} from '@package-validator/contracts';
 
-export const REPORT_PERIODS = [6, 12, 24] as const;
-export type ReportPeriod = (typeof REPORT_PERIODS)[number];
-
-export type ChangeKind = 'major' | 'minor' | 'patch' | 'unknown';
-
-export interface OutdatedDependency {
-  name: string;
-  current: string;
-  latest: string;
-  /** Semver distance to the latest release; `major` may break. */
-  change: ChangeKind;
-}
-
-export interface SubscriptionSummary {
-  /** `pending` until the address owner confirms by email. */
-  status: 'pending' | 'active';
-  periodHours: ReportPeriod;
-  /** ISO timestamp; null until the first report has been emailed. */
-  nextReportAt: string | null;
-}
-
-export interface ScheduledReport extends RepositoryRef {
-  outdated: Record<string, OutdatedDependency[]>;
-  /** When the registry was queried; reports are reused for up to an hour. */
-  generatedAt: string;
-  text: string;
-  /** Whether a confirmation request or the report itself was emailed. */
-  emailSent: boolean;
-  subscription: SubscriptionSummary;
-}
-
-export interface ConfirmedSubscription extends RepositoryRef {
-  email: string;
-  subscription: SubscriptionSummary;
-}
+export { REPORT_PERIODS };
+export type {
+  ChangeKind,
+  ConfirmedSubscription,
+  OutdatedDependency,
+  ReportPeriod,
+  ScheduledReport,
+  SubscriptionSummary,
+} from '@package-validator/contracts';
 
 export class ApiError extends Error {
   constructor(
@@ -71,11 +53,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export async function isValidRepository({ owner, repo }: RepositoryRef, signal?: AbortSignal): Promise<boolean> {
   const path = `/repo/isValid/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
-  const { valid } = await request<{ valid: boolean }>(path, { signal });
+  const { valid } = await request<ValidityResponse>(path, { signal });
   return valid;
 }
 
-export function scheduleReport(body: RepositoryRef & { email: string; period: ReportPeriod }): Promise<ScheduledReport> {
+export function scheduleReport(body: SubscriptionRequest): Promise<ScheduledReport> {
   return request<ScheduledReport>('/repo/schedule', { method: 'POST', body: JSON.stringify(body) });
 }
 

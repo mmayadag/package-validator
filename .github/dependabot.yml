@@ -1,13 +1,14 @@
 version: 2
 
 updates:
+  # One npm workspace: the root lockfile covers api, ui and packages/contracts.
   - package-ecosystem: npm
-    directory: /api
+    directory: /
     schedule:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
-    labels: ["type: chore", "area: api"]
+    labels: ["type: chore"]
     commit-message:
       prefix: "chore(deps)"
       prefix-development: "chore(deps-dev)"
@@ -18,25 +19,10 @@ updates:
     groups:
       nestjs:
         patterns: ["@nestjs/*"]
-      api-tooling:
+      svelte:
+        patterns: ["svelte", "svelte-check", "@sveltejs/*", "@tsconfig/svelte"]
+      tooling:
         dependency-type: development
-
-  - package-ecosystem: npm
-    directory: /ui
-    schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 5
-    labels: ["type: chore", "area: ui"]
-    commit-message:
-      prefix: "chore(deps-dev)"
-    ignore:
-      # TypeScript 7.0 ships only tsc; the compiler API the toolchain needs returns in 7.1
-      - dependency-name: typescript
-        update-types: ["version-update:semver-major"]
-    groups:
-      ui-tooling:
-        patterns: ["*"]
 
   - package-ecosystem: github-actions
     directory: /

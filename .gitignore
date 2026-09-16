@@ -1,3 +1,7 @@
 .env
-node_modules/
 .history
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+api/data/

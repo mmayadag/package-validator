@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
 
 concurrency:
@@ -16,40 +16,34 @@ jobs:
   api:
     name: API
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: api
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: yarn
-          cache-dependency-path: api/yarn.lock
-      - run: yarn install --frozen-lockfile
-      - run: yarn lint
-      - run: yarn typecheck
-      - run: yarn test
-      - run: yarn test:e2e
-      - run: yarn build
-
-  ui:
-    name: UI
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ui
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: ui/package-lock.json
       - run: npm ci --no-audit --no-fund
-      - run: npm run check
-      - run: npm test
-      - run: npm run build
+      - run: npm run build:contracts
+      - run: npm run lint --workspace api
+      - run: npm run typecheck --workspace api
+      - run: npm test --workspace api
+      - run: npm run test:e2e --workspace api
+      - run: npm run build --workspace api
+
+  ui:
+    name: UI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build:contracts
+      - run: npm run check --workspace ui
+      - run: npm test --workspace ui
+      - run: npm run build --workspace ui
 
   docker:
     name: Docker images

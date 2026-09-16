@@ -1,25 +1,29 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "target": "ES2023",
-    "lib": ["ES2023"],
-    "types": ["node", "vitest/globals"],
-    "strict": true,
+    "lib": [
+      "ES2023"
+    ],
+    "types": [
+      "node",
+      "vitest/globals"
+    ],
     "noUncheckedIndexedAccess": false,
-    "noImplicitOverride": true,
-    "noFallthroughCasesInSwitch": true,
-    "esModuleInterop": true,
-    "isolatedModules": true,
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "declaration": false,
     "removeComments": true,
     "sourceMap": true,
-    "skipLibCheck": true,
     "outDir": "./dist",
     "rootDir": "."
   },
-  "include": ["src", "test", "vitest.config.ts", "vitest.config.e2e.ts"]
+  "include": [
+    "src",
+    "test",
+    "vitest.config.ts",
+    "vitest.config.e2e.ts"
+  ]
 }

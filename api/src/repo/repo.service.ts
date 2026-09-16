@@ -1,50 +1,25 @@
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type {
+  ConfirmedSubscription,
+  RepoReport,
+  ReportPeriod,
+  RepositoryRef,
+  ScheduledReport,
+  SubscriptionRequest,
+  SubscriptionSummary,
+} from '@package-validator/contracts';
 import type { AppConfig } from '../config/configuration.js';
-import {
-  DependencyCheckerService,
-  type OutdatedDependencies,
-  type PackageManifest,
-} from '../dependencies/dependency-checker.service.js';
+import { DependencyCheckerService, type PackageManifest } from '../dependencies/dependency-checker.service.js';
 import { EmailService } from '../email/email.service.js';
-import { GithubService, type RepositoryRef } from '../github/github.service.js';
+import { GithubService } from '../github/github.service.js';
 import { type RenderedReport, renderReport } from '../report/render-report.js';
 import { confirmUrl, unsubscribeUrl } from '../subscriptions/subscription-links.js';
 import { HOUR_MS, type Subscription, SubscriptionsRepository } from '../subscriptions/subscriptions.repository.js';
 
-export interface RepoReport extends RenderedReport, RepositoryRef {
-  outdated: OutdatedDependencies;
-  /** ISO timestamp of the registry lookup; a report is reused for up to an hour. */
-  generatedAt: string;
-}
-
 export const REPORT_CACHE_TTL_MS = HOUR_MS;
 /** Upper bound on cached reports; the oldest entry is evicted beyond it. */
 const REPORT_CACHE_MAX_ENTRIES = 500;
-
-export interface SubscriptionRequest extends RepositoryRef {
-  email: string;
-  period: number;
-}
-
-export interface SubscriptionSummary {
-  /** `pending` until the address owner confirms; only active subscriptions receive scheduled reports. */
-  status: 'pending' | 'active';
-  periodHours: number;
-  /** When the next report is due; null until the first one has been delivered. */
-  nextReportAt: string | null;
-}
-
-export interface ScheduledReport extends RepoReport {
-  /** Whether an email (confirmation request or report) was sent. */
-  emailSent: boolean;
-  subscription: SubscriptionSummary;
-}
-
-export interface ConfirmedSubscription extends RepositoryRef {
-  email: string;
-  subscription: SubscriptionSummary;
-}
 
 @Injectable()
 export class RepoService {
@@ -172,7 +147,8 @@ function summarize(subscription: Subscription | null): SubscriptionSummary {
   const { confirmedAt, lastSentAt, periodHours } = subscription;
   return {
     status: confirmedAt === null ? 'pending' : 'active',
-    periodHours,
+    // Stored as an integer; only values from REPORT_PERIODS ever get written.
+    periodHours: periodHours as ReportPeriod,
     nextReportAt: lastSentAt === null ? null : new Date(lastSentAt + periodHours * HOUR_MS).toISOString(),
   };
 }

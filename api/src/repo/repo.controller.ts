@@ -11,7 +11,8 @@ import {
 import { RateLimit, STRICT_RATE_LIMIT } from '../common/rate-limit/rate-limit.decorator.js';
 import { RepositoryRefDto } from './dto/repository-ref.dto.js';
 import { ErrorDto, RepoReportDto, ValidityResponseDto } from './dto/responses.dto.js';
-import { type RepoReport, RepoService } from './repo.service.js';
+import type { RepoReport } from '@package-validator/contracts';
+import { RepoService } from './repo.service.js';
 
 interface ValidityResponse {
   valid: boolean;

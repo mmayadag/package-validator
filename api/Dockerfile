@@ -1,22 +1,28 @@
 # syntax=docker/dockerfile:1
+# Build context is the repository root: the API depends on the workspace package in packages/contracts.
 
 FROM node:26-alpine AS base
-# Node 25+ no longer bundles corepack, so yarn classic is installed explicitly.
-RUN npm install -g yarn@1.22.22 --no-audit --no-fund
 WORKDIR /app
+COPY package.json package-lock.json ./
+COPY packages/contracts/package.json packages/contracts/
+COPY api/package.json api/
+COPY ui/package.json ui/
 
 FROM base AS deps
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+RUN npm ci --workspace api --workspace packages/contracts --no-audit --no-fund
 
 FROM deps AS build
-COPY tsconfig.json tsconfig.build.json nest-cli.json ./
-COPY src ./src
-RUN yarn build
+COPY tsconfig.base.json ./
+COPY packages/contracts/tsconfig.json packages/contracts/
+COPY packages/contracts/src packages/contracts/src
+COPY api/tsconfig.json api/tsconfig.build.json api/nest-cli.json api/
+COPY api/src api/src
+RUN npm run build --workspace packages/contracts && npm run build --workspace api
 
 FROM base AS prod-deps
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --production && yarn cache clean
+RUN npm ci --workspace api --workspace packages/contracts --omit=dev --no-audit --no-fund \
+  && npm cache clean --force \
+  && mkdir -p api/node_modules
 
 FROM node:26-alpine AS runtime
 ENV NODE_ENV=production \
@@ -24,7 +30,12 @@ ENV NODE_ENV=production \
 WORKDIR /app
 COPY --chown=node:node package.json ./
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
-COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=prod-deps --chown=node:node /app/api/node_modules ./api/node_modules
+COPY --chown=node:node packages/contracts/package.json packages/contracts/
+COPY --from=build --chown=node:node /app/packages/contracts/dist packages/contracts/dist
+COPY --chown=node:node api/package.json api/
+COPY --from=build --chown=node:node /app/api/dist api/dist
+WORKDIR /app/api
 # SQLite database; mounted as a volume by docker compose
 RUN mkdir -p data && chown node:node data
 USER node

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import sgMail from '@sendgrid/mail';
 import type { AppConfig } from '../config/configuration.js';
-import type { RepositoryRef } from '../github/github.service.js';
+import type { RepositoryRef } from '@package-validator/contracts';
 import { escapeHtml, type RenderedReport } from '../report/render-report.js';
 
 export function withUnsubscribeFooter(report: RenderedReport, url: string): RenderedReport {
