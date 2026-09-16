@@ -26,7 +26,7 @@ sequenceDiagram
     participant npm as npm registry
     participant SendGrid
 
-    User->>Caddy: POST /repo/schedule {owner, repo, email, period}
+    User->>Caddy: POST /v1/subscriptions {owner, repo, email, period}
     Caddy->>API: proxy (same origin)
     API->>GitHub: repository exists? HEAD:package.json
     GitHub-->>API: package.json
@@ -35,7 +35,7 @@ sequenceDiagram
     API->>API: classify major / minor / patch, cache 1 h, store pending subscription
     API->>SendGrid: confirmation email
     API-->>User: report + subscription {status: pending}
-    User->>API: POST /repo/subscriptions/:token/confirm
+    User->>API: POST /v1/subscriptions/:token/confirm
     API->>SendGrid: first report
     loop every hour
         API->>API: find active subscriptions whose period elapsed
@@ -47,7 +47,7 @@ sequenceDiagram
 
 [![Architecture diagram](https://img.shields.io/badge/open-interactive%20diagram-0b63ce?style=for-the-badge)](https://mmayadag.github.io/package-validator/)
 
-The browser talks to a single origin. Caddy serves the Svelte bundle and proxies `/repo/*` to the NestJS API, which reads `package.json` from GitHub's GraphQL API, checks every dependency against the npm registry and optionally sends the report through SendGrid. The interactive diagram is generated from [`docs/architecture.json`](docs/architecture.json) with [archify](https://github.com/tt-a1i/archify) and published by the [Pages workflow](.github/workflows/pages.yml).
+The browser talks to a single origin. Caddy serves the Svelte bundle and proxies `/v1/*` to the NestJS API, which reads `package.json` from GitHub's GraphQL API, checks every dependency against the npm registry and optionally sends the report through SendGrid. The interactive diagram is generated from [`docs/architecture.json`](docs/architecture.json) with [archify](https://github.com/tt-a1i/archify) and published by the [Pages workflow](.github/workflows/pages.yml).
 
 | Directory | Role | Stack |
 |---|---|---|
@@ -85,7 +85,7 @@ make lint        # oxlint + tsc for the API, svelte-check for the UI
 make test        # API unit + e2e tests, UI tests
 
 npm run dev:api  # http://localhost:3288
-npm run dev:ui   # http://localhost:5173, /repo proxied to the API
+npm run dev:ui   # http://localhost:5173, /v1 proxied to the API
 ```
 
 ## API
@@ -93,12 +93,11 @@ npm run dev:ui   # http://localhost:5173, /repo proxied to the API
 | Method | Path | Body | Response |
 |---|---|---|---|
 | `GET` | `/health` | | `{ "status": "ok" }` |
-| `GET` | `/repo/isValid/:owner/:repo` | | `{ "valid": boolean }` |
-| `POST` | `/repo/isValid` | `{ owner, repo }` | `{ "valid": boolean }` |
-| `GET` | `/repo/details/:owner/:repo` | | Report, `404` unknown repo, `422` no `package.json` |
-| `POST` | `/repo/schedule` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | Report and a pending subscription; a confirmation email is sent |
-| `POST` | `/repo/subscriptions/:token/confirm` | | Activates the subscription and sends the first report |
-| `DELETE` | `/repo/subscriptions/:token` | | `204`, `404` unknown token |
+| `GET` | `/v1/repositories/:owner/:repo` | | `{ "valid": boolean }` |
+| `GET` | `/v1/repositories/:owner/:repo/report` | | Report, `404` unknown repo, `422` no `package.json` |
+| `POST` | `/v1/subscriptions` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | `201` report and a pending subscription; a confirmation email is sent |
+| `POST` | `/v1/subscriptions/:token/confirm` | | Activates the subscription and sends the first report |
+| `DELETE` | `/v1/subscriptions/:token` | | `204`, `404` unknown token |
 
 Swagger UI is served at `/docs` (http://localhost:8080/docs with Docker) and the OpenAPI document at `/docs/openapi.json`. Response shapes, status codes and module layout are documented in [`api/README.md`](api/README.md).
 
@@ -118,7 +117,7 @@ Copy [`.env.example`](.env.example) to `.env`. Only `TOKEN` is required; the rep
 │   │   ├── report/       report building, one-hour cache, HTML and text rendering
 │   │   ├── email/        SendGrid delivery
 │   │   ├── subscriptions/ subscription lifecycle, hourly delivery, SQLite store
-│   │   ├── repo/         routes and DTOs
+│   │   ├── routes/       /v1 controllers and DTOs
 │   │   └── health/       liveness probe
 │   └── test/             e2e tests
 ├── ui/                   Svelte 5 SPA served by Caddy

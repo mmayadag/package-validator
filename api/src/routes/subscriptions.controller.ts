@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -17,7 +18,7 @@ import { ScheduleReportDto } from './dto/schedule-report.dto.js';
 import { SubscriptionTokenDto } from './dto/subscription-token.dto.js';
 
 /** Email subscriptions to a repository's report; every route calls GitHub or touches the store, so all are strictly limited. */
-@Controller('repo')
+@Controller('subscriptions')
 @ApiTags('subscriptions')
 @RateLimit(STRICT_RATE_LIMIT)
 @ApiBadRequestResponse({ description: 'Validation failed', type: ErrorDto })
@@ -25,21 +26,20 @@ import { SubscriptionTokenDto } from './dto/subscription-token.dto.js';
 export class SubscriptionsController {
   constructor(private readonly subscriptions: SubscriptionService) {}
 
-  @Post('schedule')
-  @HttpCode(HttpStatus.OK)
+  @Post()
   @ApiOperation({
     summary: 'Build the report and subscribe an address to it',
     description:
       'A new address receives a confirmation email and stays pending until it confirms; an already confirmed address gets the report right away. One subscription per address and repository; posting again only changes the period.',
   })
-  @ApiOkResponse({ type: ScheduledReportDto })
+  @ApiCreatedResponse({ type: ScheduledReportDto })
   @ApiNotFoundResponse({ description: 'Repository does not exist or is not public', type: ErrorDto })
   @ApiUnprocessableEntityResponse({ description: 'No package.json on the default branch, or it is not valid JSON', type: ErrorDto })
-  schedule(@Body() { owner, repo, email, period }: ScheduleReportDto): Promise<ScheduledReport> {
+  subscribe(@Body() { owner, repo, email, period }: ScheduleReportDto): Promise<ScheduledReport> {
     return this.subscriptions.subscribe({ owner, repo, email, period });
   }
 
-  @Post('subscriptions/:token/confirm')
+  @Post(':token/confirm')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Confirm a subscription with the token from the email link', description: 'Activates the subscription and sends the first report. Idempotent.' })
   @ApiOkResponse({ type: ConfirmedSubscriptionDto })
@@ -48,7 +48,7 @@ export class SubscriptionsController {
     return this.subscriptions.confirm(token);
   }
 
-  @Delete('subscriptions/:token')
+  @Delete(':token')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Unsubscribe with the token from the email link' })
   @ApiNoContentResponse({ description: 'Subscription removed' })

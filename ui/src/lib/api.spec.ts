@@ -13,11 +13,11 @@ describe('api client', () => {
     const fetch = respond(200, { valid: true });
 
     await expect(isValidRepository({ owner: 'mmayadag', repo: 'next.js' })).resolves.toBe(true);
-    expect(fetch).toHaveBeenCalledWith('/repo/isValid/mmayadag/next.js', expect.anything());
+    expect(fetch).toHaveBeenCalledWith('/v1/repositories/mmayadag/next.js', expect.anything());
   });
 
   it('posts the schedule request as JSON', async () => {
-    const fetch = respond(200, { owner: 'a', repo: 'b', outdated: {}, text: '', emailSent: false });
+    const fetch = respond(201, { owner: 'a', repo: 'b', outdated: {}, text: '', emailSent: false });
 
     await scheduleReport({ owner: 'a', repo: 'b', email: 'dev@example.com', period: 24 });
 
@@ -39,7 +39,7 @@ describe('api client', () => {
     const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }));
 
     await expect(unsubscribe('abc_DEF-123')).resolves.toBeUndefined();
-    expect(fetch).toHaveBeenCalledWith('/repo/subscriptions/abc_DEF-123', expect.objectContaining({ method: 'DELETE' }));
+    expect(fetch).toHaveBeenCalledWith('/v1/subscriptions/abc_DEF-123', expect.objectContaining({ method: 'DELETE' }));
   });
 
   it('reports an unknown unsubscribe token as a 404 ApiError', async () => {
@@ -59,6 +59,6 @@ describe('confirmSubscription', () => {
     const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
 
     await expect(confirmSubscription('abc_DEF-123')).resolves.toEqual(body);
-    expect(fetch).toHaveBeenCalledWith('/repo/subscriptions/abc_DEF-123/confirm', expect.objectContaining({ method: 'POST' }));
+    expect(fetch).toHaveBeenCalledWith('/v1/subscriptions/abc_DEF-123/confirm', expect.objectContaining({ method: 'POST' }));
   });
 });

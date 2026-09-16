@@ -12,7 +12,7 @@ NestJS service that reads a public repository's `package.json` through the GitHu
 | `report` | `ReportService` builds the report (GitHub → registry → render) and keeps it for an hour; the renderer escapes every value |
 | `email` | Confirmation requests and reports through SendGrid; a no-op when it is not configured |
 | `subscriptions` | `SubscriptionService` (request, confirm, deliver, remove), the hourly `ReportSchedulerService` and the SQLite store (`node:sqlite`, no native dependency) |
-| `repo` | HTTP layer only: `RepoController`, `SubscriptionsController` and the DTOs |
+| `routes` | HTTP layer only: the `/v1` controllers (`RepositoriesController`, `SubscriptionsController`) and the DTOs |
 | `health` | `GET /health` liveness probe |
 
 ## Endpoints
@@ -22,12 +22,11 @@ Interactive documentation (Swagger UI) is served at [`/docs`](http://localhost:3
 | Method | Path | Body | Success | Errors |
 |---|---|---|---|---|
 | `GET` | `/health` | | `200 { status: "ok" }` | |
-| `GET` | `/repo/isValid/:owner/:repo` | | `200 { valid }` | `400` invalid name |
-| `POST` | `/repo/isValid` | `{ owner, repo }` | `200 { valid }` | `400` invalid body |
-| `GET` | `/repo/details/:owner/:repo` | | `200` report | `404` unknown repo, `422` no or invalid `package.json` |
-| `POST` | `/repo/schedule` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | `200` report, `emailSent`, `subscription` | `400`, `404`, `422` |
-| `POST` | `/repo/subscriptions/:token/confirm` | | `200` owner, repo, email, `subscription` | `400` malformed token, `404` unknown or expired |
-| `DELETE` | `/repo/subscriptions/:token` | | `204` | `400` malformed token, `404` unknown token |
+| `GET` | `/v1/repositories/:owner/:repo` | | `200 { valid }` | `400` invalid name |
+| `GET` | `/v1/repositories/:owner/:repo/report` | | `200` report | `404` unknown repo, `422` no or invalid `package.json` |
+| `POST` | `/v1/subscriptions` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | `201` report, `emailSent`, `subscription` | `400`, `404`, `422` |
+| `POST` | `/v1/subscriptions/:token/confirm` | | `200` owner, repo, email, `subscription` | `400` malformed token, `404` unknown or expired |
+| `DELETE` | `/v1/subscriptions/:token` | | `204` | `400` malformed token, `404` unknown token |
 
 A report looks like this:
 
@@ -50,7 +49,7 @@ A report is cached in memory for one hour per repository, so repeated requests a
 
 ### Subscriptions
 
-`POST /repo/schedule` returns the report immediately and stores one subscription per email and repository (case-insensitive); posting again only changes the period. A new address is **pending**: it receives a confirmation email, not the report, and the response carries `subscription: { status: "pending", periodHours, nextReportAt: null }`. Confirming through `POST /repo/subscriptions/:token/confirm` activates it and sends the first report; unconfirmed requests are deleted after 24 hours. An already confirmed address gets the report straight away and `status: "active"`.
+`POST /v1/subscriptions` returns the report immediately and stores one subscription per email and repository (case-insensitive); posting again only changes the period. A new address is **pending**: it receives a confirmation email, not the report, and the response carries `subscription: { status: "pending", periodHours, nextReportAt: null }`. Confirming through `POST /v1/subscriptions/:token/confirm` activates it and sends the first report; unconfirmed requests are deleted after 24 hours. An already confirmed address gets the report straight away and `status: "active"`.
 
 Every email links to the UI (`PUBLIC_URL/?confirm=<token>` and `PUBLIC_URL/?unsubscribe=<token>`), which asks for a click before calling the API, so mail scanners that follow links can neither confirm nor unsubscribe anyone. The token is never returned by the API.
 

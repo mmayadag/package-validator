@@ -1,4 +1,4 @@
-import { type INestApplication, ValidationPipe } from '@nestjs/common';
+import { type INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { DOCS_PATH, setupOpenApi } from './openapi.js';
@@ -23,6 +23,8 @@ export function configureApp(app: INestApplication): INestApplication {
     return (isDocs ? docsHeaders : apiHeaders)(request, response, next);
   });
 
+  // Every controller answers under /v1 unless it opts out with VERSION_NEUTRAL (health).
+  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

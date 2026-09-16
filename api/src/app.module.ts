@@ -5,7 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { RateLimitGuard } from './common/rate-limit/rate-limit.guard.js';
 import { loadConfig } from './config/configuration.js';
 import { HealthController } from './health/health.controller.js';
-import { RepoModule } from './repo/repo.module.js';
+import { RoutesModule } from './routes/routes.module.js';
 
 @Module({
   imports: [
@@ -17,7 +17,7 @@ import { RepoModule } from './repo/repo.module.js';
       load: [() => loadConfig(process.env)],
     }),
     ScheduleModule.forRoot(),
-    RepoModule,
+    RoutesModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: RateLimitGuard }],
