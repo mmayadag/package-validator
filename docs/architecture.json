@@ -28,7 +28,7 @@
   "connections": [
     { "id": "browser-to-caddy", "from": "browser", "to": "caddy", "label": "HTTP :8080", "variant": "emphasis" },
     { "id": "caddy-to-bundle", "from": "caddy", "to": "bundle", "label": "SPA files", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelDy": 24 },
-    { "id": "caddy-to-api", "from": "caddy", "to": "api", "label": "/repo/*", "variant": "emphasis" },
+    { "id": "caddy-to-api", "from": "caddy", "to": "api", "label": "/v1/*", "variant": "emphasis" },
     { "id": "api-to-store", "from": "api", "to": "store", "label": "subscriptions", "fromSide": "top", "toSide": "right" },
     { "id": "api-to-github", "from": "api", "to": "github", "label": "GraphQL", "fromSide": "top", "toSide": "left" },
     { "id": "api-to-checker", "from": "api", "to": "checker", "label": "package.json" },
@@ -37,7 +37,7 @@
     { "id": "mailer-to-sendgrid", "from": "mailer", "to": "sendgrid", "label": "HTTPS", "variant": "dashed" }
   ],
   "cards": [
-    { "dot": "cyan", "title": "Edge", "items": ["Caddy serves the SPA and proxies /repo/* to the API", "Same origin, so no CORS configuration"] },
+    { "dot": "cyan", "title": "Edge", "items": ["Caddy serves the SPA and proxies /v1/* to the API", "Same origin, so no CORS configuration"] },
     { "dot": "emerald", "title": "API", "items": ["Per-IP rate limits; package.json is checked in memory", "Subscriptions in SQLite; an hourly job emails due reports"] },
     { "dot": "violet", "title": "External services", "items": ["GitHub token required", "SendGrid optional; nothing is emailed without a key"] }
   ]

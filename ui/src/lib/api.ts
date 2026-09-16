@@ -52,19 +52,19 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export async function isValidRepository({ owner, repo }: RepositoryRef, signal?: AbortSignal): Promise<boolean> {
-  const path = `/repo/isValid/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
+  const path = `/v1/repositories/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
   const { valid } = await request<ValidityResponse>(path, { signal });
   return valid;
 }
 
 export function scheduleReport(body: SubscriptionRequest): Promise<ScheduledReport> {
-  return request<ScheduledReport>('/repo/schedule', { method: 'POST', body: JSON.stringify(body) });
+  return request<ScheduledReport>('/v1/subscriptions', { method: 'POST', body: JSON.stringify(body) });
 }
 
 export function confirmSubscription(token: string): Promise<ConfirmedSubscription> {
-  return request<ConfirmedSubscription>(`/repo/subscriptions/${encodeURIComponent(token)}/confirm`, { method: 'POST' });
+  return request<ConfirmedSubscription>(`/v1/subscriptions/${encodeURIComponent(token)}/confirm`, { method: 'POST' });
 }
 
 export async function unsubscribe(token: string): Promise<void> {
-  await request<null>(`/repo/subscriptions/${encodeURIComponent(token)}`, { method: 'DELETE' });
+  await request<null>(`/v1/subscriptions/${encodeURIComponent(token)}`, { method: 'DELETE' });
 }

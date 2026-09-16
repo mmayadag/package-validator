@@ -5161,7 +5161,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <!-- Connection paths (before components for correct z-order) -->
         <path data-edge-from="browser" data-edge-to="caddy" data-edge-label="HTTP :8080" data-edge-key="0" data-edge-id="browser-to-caddy" data-composition-points="170,330;260,330" d="M 170 330 L 260 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="caddy" data-edge-to="bundle" data-edge-label="SPA files" data-edge-key="1" data-edge-id="caddy-to-bundle" data-composition-points="330,360;330,450" d="M 330 360 L 330 450" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="caddy" data-edge-to="api" data-edge-label="/repo/*" data-edge-key="2" data-edge-id="caddy-to-api" data-composition-points="400,330;490,330" d="M 400 330 L 490 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="caddy" data-edge-to="api" data-edge-label="/v1/*" data-edge-key="2" data-edge-id="caddy-to-api" data-composition-points="400,330;490,330" d="M 400 330 L 490 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="api" data-edge-to="store" data-edge-label="subscriptions" data-edge-key="3" data-edge-id="api-to-store" data-composition-points="558,300;558,276;424,276;424,180;400,180" d="M 558 300 L 558 284 Q 558 276 550 276 L 432 276 Q 424 276 424 268 L 424 188 Q 424 180 416 180 L 400 180" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="api" data-edge-to="github" data-edge-label="GraphQL" data-edge-key="4" data-edge-id="api-to-github" data-composition-points="572,300;572,276;926,276;926,180;950,180" d="M 572 300 L 572 284 Q 572 276 580 276 L 918 276 Q 926 276 926 268 L 926 188 Q 926 180 934 180 L 950 180" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="api" data-edge-to="checker" data-edge-label="package.json" data-edge-key="5" data-edge-id="api-to-checker" data-composition-points="640,330;720,330" d="M 640 330 L 720 330" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
@@ -5235,15 +5235,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="fine" x="565" y="352" class="t-backend" font-size="7" text-anchor="middle">rate limited</text>
         </g>
 
-        <g id="node-checker" data-node-id="checker" data-node-label="Dependency checker" tabindex="0" role="button" aria-label="Focus Dependency checker, npm-check-updates, docker compose" aria-pressed="false" data-node-kind="backend" data-node-sublabel="npm-check-updates" data-node-context="docker compose">
-          <title>Dependency checker · npm-check-updates · docker compose</title>
+        <g id="node-checker" data-node-id="checker" data-node-label="Dependency checker" tabindex="0" role="button" aria-label="Focus Dependency checker, dist-tags + semver, docker compose" aria-pressed="false" data-node-kind="backend" data-node-sublabel="dist-tags + semver" data-node-context="docker compose">
+          <title>Dependency checker · dist-tags + semver · docker compose</title>
           <rect x="720" y="300" width="160" height="60" rx="6" class="c-mask"/>
           <rect x="720" y="300" width="160" height="60" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(726 306) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="800" y="328" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Dependency checker</text>
-        <text data-detail="context" x="800" y="344" class="t-muted" font-size="9" text-anchor="middle">npm-check-updates</text>
+        <text data-detail="context" x="800" y="344" class="t-muted" font-size="9" text-anchor="middle">dist-tags + semver</text>
         </g>
 
         <g id="node-mailer" data-node-id="mailer" data-node-label="Report mailer" tabindex="0" role="button" aria-label="Focus Report mailer, hourly schedule, docker compose" aria-pressed="false" data-node-kind="backend" data-node-sublabel="hourly schedule" data-node-context="docker compose">
@@ -5302,9 +5302,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <rect x="303.4" y="364" width="53.199999999999996" height="14" rx="3" class="c-mask"/>
           <text x="330" y="374" class="t-messagebus" font-size="8" text-anchor="middle">SPA files</text>
         </g>
-        <g data-detail="context" data-edge-from="caddy" data-edge-to="api" data-edge-label="/repo/*" data-edge-key="2" data-edge-id="caddy-to-api">
-          <rect x="423.2" y="310" width="43.6" height="14" rx="3" class="c-mask"/>
-          <text x="445" y="320" class="t-backend" font-size="8" text-anchor="middle">/repo/*</text>
+        <g data-detail="context" data-edge-from="caddy" data-edge-to="api" data-edge-label="/v1/*" data-edge-key="2" data-edge-id="caddy-to-api">
+          <rect x="428" y="310" width="34" height="14" rx="3" class="c-mask"/>
+          <text x="445" y="320" class="t-backend" font-size="8" text-anchor="middle">/v1/*</text>
         </g>
         <g data-detail="context" data-edge-from="api" data-edge-to="store" data-edge-label="subscriptions" data-edge-key="3" data-edge-id="api-to-store">
           <rect x="454.8" y="256" width="72.4" height="14" rx="3" class="c-mask"/>
@@ -5531,7 +5531,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <h3>Edge</h3>
         </div>
         <ul>
-          <li>&bull; Caddy serves the SPA and proxies /repo/* to the API</li>
+          <li>&bull; Caddy serves the SPA and proxies /v1/* to the API</li>
           <li>&bull; Same origin, so no CORS configuration</li>
         </ul>
       </div>

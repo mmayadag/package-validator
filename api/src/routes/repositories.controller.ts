@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
@@ -15,38 +15,30 @@ import { ReportService } from '../report/report.service.js';
 import { RepositoryRefDto } from './dto/repository-ref.dto.js';
 import { ErrorDto, RepoReportDto, ValidityResponseDto } from './dto/responses.dto.js';
 
-@Controller('repo')
+@Controller('repositories')
 @ApiTags('repositories')
 @ApiBadRequestResponse({ description: 'Validation failed', type: ErrorDto })
 @ApiTooManyRequestsResponse({ description: 'Rate limit exceeded; see Retry-After', type: ErrorDto })
-export class RepoController {
+export class RepositoriesController {
   constructor(
     private readonly github: GithubService,
     private readonly reports: ReportService,
   ) {}
 
-  @Get('isValid/:owner/:repo')
+  @Get(':owner/:repo')
   @ApiOperation({ summary: 'Check that a repository exists and is public' })
   @ApiOkResponse({ type: ValidityResponseDto })
-  async isValidByPath(@Param() ref: RepositoryRefDto): Promise<ValidityResponse> {
+  async validity(@Param() ref: RepositoryRefDto): Promise<ValidityResponse> {
     return { valid: await this.github.repositoryExists(ref) };
   }
 
-  @Post('isValid')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Check that a repository exists and is public (body variant)' })
-  @ApiOkResponse({ type: ValidityResponseDto })
-  async isValid(@Body() ref: RepositoryRefDto): Promise<ValidityResponse> {
-    return { valid: await this.github.repositoryExists(ref) };
-  }
-
-  @Get('details/:owner/:repo')
+  @Get(':owner/:repo/report')
   @RateLimit(STRICT_RATE_LIMIT)
   @ApiOperation({ summary: 'Report outdated dependencies of package.json on the default branch' })
   @ApiOkResponse({ type: RepoReportDto })
   @ApiNotFoundResponse({ description: 'Repository does not exist or is not public', type: ErrorDto })
   @ApiUnprocessableEntityResponse({ description: 'No package.json on the default branch, or it is not valid JSON', type: ErrorDto })
-  details(@Param() ref: RepositoryRefDto): Promise<RepoReport> {
+  report(@Param() ref: RepositoryRefDto): Promise<RepoReport> {
     return this.reports.buildReport(ref);
   }
 }

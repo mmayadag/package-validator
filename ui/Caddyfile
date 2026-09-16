@@ -4,7 +4,7 @@
 	# API calls are same-origin; forward them to the NestJS container, which
 	# sets its own security headers (helmet).
 	# handle blocks are mutually exclusive, so try_files below can't rewrite these.
-	handle /repo/* {
+	handle /v1/* {
 		reverse_proxy api:3288
 	}
 

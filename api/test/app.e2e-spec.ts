@@ -54,16 +54,15 @@ describe('API (e2e)', () => {
       expect(body.info.title).toBe('Package Validator API');
       expect(Object.keys(body.paths).sort()).toEqual([
         '/health',
-        '/repo/details/{owner}/{repo}',
-        '/repo/isValid',
-        '/repo/isValid/{owner}/{repo}',
-        '/repo/schedule',
-        '/repo/subscriptions/{token}',
-        '/repo/subscriptions/{token}/confirm',
+        '/v1/repositories/{owner}/{repo}',
+        '/v1/repositories/{owner}/{repo}/report',
+        '/v1/subscriptions',
+        '/v1/subscriptions/{token}',
+        '/v1/subscriptions/{token}/confirm',
       ]);
       expect(body.components.schemas.ScheduledReportDto.properties.subscription).toBeDefined();
-      expect(body.paths['/repo/schedule'].post.tags).toEqual(['subscriptions']);
-      expect(body.paths['/repo/details/{owner}/{repo}'].get.tags).toEqual(['repositories']);
+      expect(body.paths['/v1/subscriptions'].post.tags).toEqual(['subscriptions']);
+      expect(body.paths['/v1/repositories/{owner}/{repo}/report'].get.tags).toEqual(['repositories']);
     });
 
     it('serves Swagger UI with a CSP that allows its inline bootstrap', async () => {
@@ -90,33 +89,32 @@ describe('API (e2e)', () => {
     expect(job.cronTime.source).toBe(CronExpression.EVERY_HOUR);
   });
 
-  describe('isValid', () => {
-    it('GET /repo/isValid/:owner/:repo', async () => {
+  it('does not answer the old unversioned routes', async () => {
+    await request(app.getHttpServer()).get('/repo/isValid/mmayadag/package-validator').expect(404);
+    await request(app.getHttpServer()).get('/repositories/mmayadag/package-validator').expect(404);
+  });
+
+  describe('GET /v1/repositories/:owner/:repo', () => {
+    it('reports whether the repository exists', async () => {
       github.repositoryExists.mockResolvedValue(true);
 
-      await request(app.getHttpServer()).get('/repo/isValid/mmayadag/package-validator').expect(200, { valid: true });
+      await request(app.getHttpServer()).get('/v1/repositories/mmayadag/package-validator').expect(200, { valid: true });
       expect(github.repositoryExists).toHaveBeenCalledWith({ owner: 'mmayadag', repo: 'package-validator' });
     });
 
-    it('POST /repo/isValid', async () => {
+    it('reports a missing repository as invalid', async () => {
       github.repositoryExists.mockResolvedValue(false);
 
-      await request(app.getHttpServer())
-        .post('/repo/isValid')
-        .send({ owner: 'mmayadag', repo: 'missing' })
-        .expect(200, { valid: false });
+      await request(app.getHttpServer()).get('/v1/repositories/mmayadag/missing').expect(200, { valid: false });
     });
 
     it('rejects names GitHub would not accept', async () => {
-      await request(app.getHttpServer()).post('/repo/isValid').send({ owner: '-bad', repo: 'x' }).expect(400);
+      await request(app.getHttpServer()).get('/v1/repositories/-bad/x').expect(400);
       expect(github.repositoryExists).not.toHaveBeenCalled();
     });
-
-    it('rejects unknown body fields', () =>
-      request(app.getHttpServer()).post('/repo/isValid').send({ owner: 'a', repo: 'b', admin: true }).expect(400));
   });
 
-  describe('GET /repo/details/:owner/:repo', () => {
+  describe('GET /v1/repositories/:owner/:repo/report', () => {
     it('returns the report', async () => {
       github.repositoryExists.mockResolvedValue(true);
       github.getPackageJson.mockResolvedValue('{"dependencies":{"express":"^4.0.0"}}');
@@ -124,7 +122,7 @@ describe('API (e2e)', () => {
         dependencies: [{ name: 'express', current: '^4.0.0', latest: '^5.1.0', change: 'major' }],
       });
 
-      const { body } = await request(app.getHttpServer()).get('/repo/details/mmayadag/app').expect(200);
+      const { body } = await request(app.getHttpServer()).get('/v1/repositories/mmayadag/app/report').expect(200);
 
       expect(body).toMatchObject({ owner: 'mmayadag', repo: 'app', outdated: { dependencies: [{ name: 'express' }] } });
       expect(body.html).toContain('<td>express</td>');
@@ -133,25 +131,25 @@ describe('API (e2e)', () => {
     it('returns 404 for an unknown repository', async () => {
       github.repositoryExists.mockResolvedValue(false);
 
-      await request(app.getHttpServer()).get('/repo/details/mmayadag/missing').expect(404);
+      await request(app.getHttpServer()).get('/v1/repositories/mmayadag/missing/report').expect(404);
     });
 
     it('returns 422 when there is no package.json', async () => {
       github.repositoryExists.mockResolvedValue(true);
       github.getPackageJson.mockResolvedValue(null);
 
-      await request(app.getHttpServer()).get('/repo/details/mmayadag/go-app').expect(422);
+      await request(app.getHttpServer()).get('/v1/repositories/mmayadag/go-app/report').expect(422);
     });
   });
 
-  describe('POST /repo/schedule', () => {
+  describe('POST /v1/subscriptions', () => {
     const body = { owner: 'mmayadag', repo: 'app', email: 'dev@example.com', period: 24 };
 
     it('returns the report and asks a new address to confirm', async () => {
       givenValidRepository();
       email.sendConfirmation.mockResolvedValue(true);
 
-      const response = await request(app.getHttpServer()).post('/repo/schedule').send(body).expect(200);
+      const response = await request(app.getHttpServer()).post('/v1/subscriptions').send(body).expect(201);
 
       expect(response.body).toMatchObject({
         owner: 'mmayadag',
@@ -173,8 +171,8 @@ describe('API (e2e)', () => {
       givenValidRepository();
       email.sendConfirmation.mockResolvedValue(false);
 
-      await request(app.getHttpServer()).post('/repo/schedule').send({ ...body, repo: 'dedupe', period: 6 }).expect(200);
-      await request(app.getHttpServer()).post('/repo/schedule').send({ ...body, repo: 'Dedupe', period: 12 }).expect(200);
+      await request(app.getHttpServer()).post('/v1/subscriptions').send({ ...body, repo: 'dedupe', period: 6 }).expect(201);
+      await request(app.getHttpServer()).post('/v1/subscriptions').send({ ...body, repo: 'Dedupe', period: 12 }).expect(201);
 
       const stored = moduleRef.get(SubscriptionsRepository).find({ owner: 'mmayadag', repo: 'dedupe', email: body.email });
       expect(stored?.periodHours).toBe(12);
@@ -183,9 +181,11 @@ describe('API (e2e)', () => {
     it.each([
       ['an invalid email', { email: 'nope' }],
       ['an unsupported period', { period: 7 }],
+      ['an owner GitHub would not accept', { owner: '-bad' }],
+      ['unknown body fields', { admin: true }],
     ])('rejects %s', async (_, override) => {
       await request(app.getHttpServer())
-        .post('/repo/schedule')
+        .post('/v1/subscriptions')
         .send({ ...body, ...override })
         .expect(400);
     });
@@ -193,16 +193,16 @@ describe('API (e2e)', () => {
 
   const confirmLinkToken = () => new URL(email.sendConfirmation.mock.calls[0][3] as string).searchParams.get('confirm');
 
-  describe('POST /repo/subscriptions/:token/confirm', () => {
+  describe('POST /v1/subscriptions/:token/confirm', () => {
     it('activates the subscription, sends the first report and is idempotent', async () => {
       givenValidRepository();
       email.sendConfirmation.mockResolvedValue(true);
       email.sendReport.mockResolvedValue(true);
       const key = { owner: 'mmayadag', repo: 'confirm-me', email: 'dev@example.com' };
-      await request(app.getHttpServer()).post('/repo/schedule').send({ ...key, period: 12 }).expect(200);
+      await request(app.getHttpServer()).post('/v1/subscriptions').send({ ...key, period: 12 }).expect(201);
       const token = confirmLinkToken();
 
-      const { body } = await request(app.getHttpServer()).post(`/repo/subscriptions/${token}/confirm`).expect(200);
+      const { body } = await request(app.getHttpServer()).post(`/v1/subscriptions/${token}/confirm`).expect(200);
 
       expect(body).toEqual({ ...key, subscription: { status: 'active', periodHours: 12, nextReportAt: expect.any(String) } });
       expect(email.sendReport).toHaveBeenCalledWith(
@@ -213,7 +213,7 @@ describe('API (e2e)', () => {
       );
       expect(moduleRef.get(SubscriptionsRepository).findDue(Date.now())).toEqual([]);
 
-      await request(app.getHttpServer()).post(`/repo/subscriptions/${token}/confirm`).expect(200);
+      await request(app.getHttpServer()).post(`/v1/subscriptions/${token}/confirm`).expect(200);
       expect(email.sendReport).toHaveBeenCalledTimes(1);
     });
 
@@ -222,13 +222,13 @@ describe('API (e2e)', () => {
       email.sendConfirmation.mockResolvedValue(true);
       email.sendReport.mockResolvedValue(true);
       const key = { owner: 'mmayadag', repo: 'again', email: 'dev@example.com' };
-      await request(app.getHttpServer()).post('/repo/schedule').send({ ...key, period: 6 }).expect(200);
-      await request(app.getHttpServer()).post(`/repo/subscriptions/${confirmLinkToken()}/confirm`).expect(200);
+      await request(app.getHttpServer()).post('/v1/subscriptions').send({ ...key, period: 6 }).expect(201);
+      await request(app.getHttpServer()).post(`/v1/subscriptions/${confirmLinkToken()}/confirm`).expect(200);
       vi.clearAllMocks();
       givenValidRepository();
       email.sendReport.mockResolvedValue(true);
 
-      const { body } = await request(app.getHttpServer()).post('/repo/schedule').send({ ...key, period: 24 }).expect(200);
+      const { body } = await request(app.getHttpServer()).post('/v1/subscriptions').send({ ...key, period: 24 }).expect(201);
 
       expect(body.subscription).toMatchObject({ status: 'active', periodHours: 24 });
       expect(email.sendConfirmation).not.toHaveBeenCalled();
@@ -236,31 +236,33 @@ describe('API (e2e)', () => {
     });
 
     it('returns 404 for an unknown token', () =>
-      request(app.getHttpServer()).post(`/repo/subscriptions/${'a'.repeat(32)}/confirm`).expect(404));
+      request(app.getHttpServer()).post(`/v1/subscriptions/${'a'.repeat(32)}/confirm`).expect(404));
   });
 
-  describe('DELETE /repo/subscriptions/:token', () => {
+  describe('DELETE /v1/subscriptions/:token', () => {
     it('unsubscribes with the token from the email link', async () => {
       givenValidRepository();
       email.sendConfirmation.mockResolvedValue(true);
       const subscription = { owner: 'mmayadag', repo: 'unsubscribe-me', email: 'dev@example.com' };
 
+      // A different client address: the strict limit on POST /v1/subscriptions is shared with the tests above.
       await request(app.getHttpServer())
-        .post('/repo/schedule')
+        .post('/v1/subscriptions')
+        .set('X-Forwarded-For', '203.0.113.9')
         .send({ ...subscription, period: 6 })
-        .expect(200);
+        .expect(201);
       const token = confirmLinkToken();
 
-      await request(app.getHttpServer()).delete(`/repo/subscriptions/${token}`).expect(204);
+      await request(app.getHttpServer()).delete(`/v1/subscriptions/${token}`).expect(204);
       expect(moduleRef.get(SubscriptionsRepository).find(subscription)).toBeNull();
-      await request(app.getHttpServer()).delete(`/repo/subscriptions/${token}`).expect(404);
+      await request(app.getHttpServer()).delete(`/v1/subscriptions/${token}`).expect(404);
     });
 
     it('returns 404 for an unknown token', () =>
-      request(app.getHttpServer()).delete(`/repo/subscriptions/${'a'.repeat(32)}`).expect(404));
+      request(app.getHttpServer()).delete(`/v1/subscriptions/${'a'.repeat(32)}`).expect(404));
 
     it('rejects a malformed token', () =>
-      request(app.getHttpServer()).delete('/repo/subscriptions/not-a-token').expect(400));
+      request(app.getHttpServer()).delete('/v1/subscriptions/not-a-token').expect(400));
   });
 
   describe('rate limiting', () => {
@@ -270,7 +272,7 @@ describe('API (e2e)', () => {
       let limited: request.Response | undefined;
 
       for (let i = 0; i < 12 && !limited; i += 1) {
-        const response = await request(app.getHttpServer()).get('/repo/details/mmayadag/flood');
+        const response = await request(app.getHttpServer()).get('/v1/repositories/mmayadag/flood/report');
         statuses.push(response.status);
         if (response.status === 429) limited = response;
       }
@@ -284,7 +286,7 @@ describe('API (e2e)', () => {
       github.repositoryExists.mockResolvedValue(false);
 
       await request(app.getHttpServer())
-        .get('/repo/details/mmayadag/flood')
+        .get('/v1/repositories/mmayadag/flood/report')
         .set('X-Forwarded-For', '198.51.100.7')
         .expect(404);
     });
