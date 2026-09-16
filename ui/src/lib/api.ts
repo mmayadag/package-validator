@@ -1,7 +1,6 @@
 import {
   type ConfirmedSubscription,
   REPORT_PERIODS,
-  type ReportPeriod,
   type RepositoryRef,
   type ScheduledReport,
   type SubscriptionRequest,

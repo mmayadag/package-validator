@@ -64,6 +64,11 @@ export class RateLimitGuard implements CanActivate {
     return true;
   }
 
+  /** Forgets every window; used to isolate tests. */
+  reset(): void {
+    this.windows.clear();
+  }
+
   private sweep(now: number): void {
     if (now - this.lastSweep < SWEEP_INTERVAL_MS) {
       return;

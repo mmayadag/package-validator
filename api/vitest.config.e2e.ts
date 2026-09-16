@@ -7,5 +7,7 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['test/**/*.e2e-spec.ts'],
+    // Random order proves the tests do not depend on each other; the seed is printed on failure.
+    sequence: { shuffle: true },
   },
 });

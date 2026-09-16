@@ -39,6 +39,11 @@ export class ReportService {
     return report;
   }
 
+  /** Drops every cached report; used to isolate tests. */
+  clearCache(): void {
+    this.reports.clear();
+  }
+
   private async fetchReport(ref: RepositoryRef): Promise<RepoReport> {
     const { owner, repo } = ref;
 

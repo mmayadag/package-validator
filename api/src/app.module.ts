@@ -20,6 +20,7 @@ import { RoutesModule } from './routes/routes.module.js';
     RoutesModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: RateLimitGuard }],
+  // Registered as its own provider too, so tests can reach the instance and reset it.
+  providers: [RateLimitGuard, { provide: APP_GUARD, useExisting: RateLimitGuard }],
 })
 export class AppModule {}

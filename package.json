@@ -21,9 +21,12 @@
     "build:contracts": "npm run build --workspace packages/contracts",
     "build": "npm run build --workspace packages/contracts --workspace api --workspace ui",
     "lint": "npm run lint --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "npm run build:contracts && npm run typecheck --workspace api && npm run check --workspace ui",
     "test": "npm run build:contracts && npm test --workspace api --workspace ui",
     "test:e2e": "npm run build:contracts && npm run test:e2e --workspace api",
+    "test:smoke": "playwright test --config e2e/playwright.config.ts",
     "dev:api": "npm run start:dev --workspace api",
     "dev:ui": "npm run dev --workspace ui"
   },
@@ -31,5 +34,10 @@
     "type": "git",
     "url": "https://github.com/mmayadag/package-validator.git"
   },
-  "homepage": "https://github.com/mmayadag/package-validator#readme"
+  "homepage": "https://github.com/mmayadag/package-validator#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "prettier": "^3.9.7",
+    "prettier-plugin-svelte": "^4.1.1"
+  }
 }

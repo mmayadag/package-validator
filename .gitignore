@@ -5,3 +5,5 @@ dist/
 coverage/
 *.tsbuildinfo
 api/data/
+test-results/
+playwright-report/

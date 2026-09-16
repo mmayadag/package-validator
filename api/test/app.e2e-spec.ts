@@ -4,9 +4,11 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/app.setup.js';
+import { RateLimitGuard } from '../src/common/rate-limit/rate-limit.guard.js';
 import { DependencyCheckerService } from '../src/dependencies/dependency-checker.service.js';
 import { EmailService } from '../src/email/email.service.js';
 import { GithubService } from '../src/github/github.service.js';
+import { ReportService } from '../src/report/report.service.js';
 import { SubscriptionsRepository } from '../src/subscriptions/subscriptions.repository.js';
 
 describe('API (e2e)', () => {
@@ -37,7 +39,13 @@ describe('API (e2e)', () => {
     vi.unstubAllEnvs();
   });
 
-  beforeEach(() => vi.resetAllMocks());
+  // Every test starts with empty mocks, no cached report and fresh rate-limit windows,
+  // so the suite passes in any order (see vitest.config.e2e.ts, which shuffles it).
+  beforeEach(() => {
+    vi.resetAllMocks();
+    moduleRef.get(ReportService).clearCache();
+    moduleRef.get(RateLimitGuard).reset();
+  });
 
   const givenValidRepository = () => {
     github.repositoryExists.mockResolvedValue(true);
@@ -98,7 +106,9 @@ describe('API (e2e)', () => {
     it('reports whether the repository exists', async () => {
       github.repositoryExists.mockResolvedValue(true);
 
-      await request(app.getHttpServer()).get('/v1/repositories/mmayadag/package-validator').expect(200, { valid: true });
+      await request(app.getHttpServer())
+        .get('/v1/repositories/mmayadag/package-validator')
+        .expect(200, { valid: true });
       expect(github.repositoryExists).toHaveBeenCalledWith({ owner: 'mmayadag', repo: 'package-validator' });
     });
 
@@ -171,10 +181,18 @@ describe('API (e2e)', () => {
       givenValidRepository();
       email.sendConfirmation.mockResolvedValue(false);
 
-      await request(app.getHttpServer()).post('/v1/subscriptions').send({ ...body, repo: 'dedupe', period: 6 }).expect(201);
-      await request(app.getHttpServer()).post('/v1/subscriptions').send({ ...body, repo: 'Dedupe', period: 12 }).expect(201);
+      await request(app.getHttpServer())
+        .post('/v1/subscriptions')
+        .send({ ...body, repo: 'dedupe', period: 6 })
+        .expect(201);
+      await request(app.getHttpServer())
+        .post('/v1/subscriptions')
+        .send({ ...body, repo: 'Dedupe', period: 12 })
+        .expect(201);
 
-      const stored = moduleRef.get(SubscriptionsRepository).find({ owner: 'mmayadag', repo: 'dedupe', email: body.email });
+      const stored = moduleRef
+        .get(SubscriptionsRepository)
+        .find({ owner: 'mmayadag', repo: 'dedupe', email: body.email });
       expect(stored?.periodHours).toBe(12);
     });
 
@@ -199,12 +217,18 @@ describe('API (e2e)', () => {
       email.sendConfirmation.mockResolvedValue(true);
       email.sendReport.mockResolvedValue(true);
       const key = { owner: 'mmayadag', repo: 'confirm-me', email: 'dev@example.com' };
-      await request(app.getHttpServer()).post('/v1/subscriptions').send({ ...key, period: 12 }).expect(201);
+      await request(app.getHttpServer())
+        .post('/v1/subscriptions')
+        .send({ ...key, period: 12 })
+        .expect(201);
       const token = confirmLinkToken();
 
       const { body } = await request(app.getHttpServer()).post(`/v1/subscriptions/${token}/confirm`).expect(200);
 
-      expect(body).toEqual({ ...key, subscription: { status: 'active', periodHours: 12, nextReportAt: expect.any(String) } });
+      expect(body).toEqual({
+        ...key,
+        subscription: { status: 'active', periodHours: 12, nextReportAt: expect.any(String) },
+      });
       expect(email.sendReport).toHaveBeenCalledWith(
         'dev@example.com',
         { owner: 'mmayadag', repo: 'confirm-me' },
@@ -222,13 +246,19 @@ describe('API (e2e)', () => {
       email.sendConfirmation.mockResolvedValue(true);
       email.sendReport.mockResolvedValue(true);
       const key = { owner: 'mmayadag', repo: 'again', email: 'dev@example.com' };
-      await request(app.getHttpServer()).post('/v1/subscriptions').send({ ...key, period: 6 }).expect(201);
+      await request(app.getHttpServer())
+        .post('/v1/subscriptions')
+        .send({ ...key, period: 6 })
+        .expect(201);
       await request(app.getHttpServer()).post(`/v1/subscriptions/${confirmLinkToken()}/confirm`).expect(200);
       vi.clearAllMocks();
       givenValidRepository();
       email.sendReport.mockResolvedValue(true);
 
-      const { body } = await request(app.getHttpServer()).post('/v1/subscriptions').send({ ...key, period: 24 }).expect(201);
+      const { body } = await request(app.getHttpServer())
+        .post('/v1/subscriptions')
+        .send({ ...key, period: 24 })
+        .expect(201);
 
       expect(body.subscription).toMatchObject({ status: 'active', periodHours: 24 });
       expect(email.sendConfirmation).not.toHaveBeenCalled();
@@ -236,7 +266,9 @@ describe('API (e2e)', () => {
     });
 
     it('returns 404 for an unknown token', () =>
-      request(app.getHttpServer()).post(`/v1/subscriptions/${'a'.repeat(32)}/confirm`).expect(404));
+      request(app.getHttpServer())
+        .post(`/v1/subscriptions/${'a'.repeat(32)}/confirm`)
+        .expect(404));
   });
 
   describe('DELETE /v1/subscriptions/:token', () => {
@@ -245,10 +277,8 @@ describe('API (e2e)', () => {
       email.sendConfirmation.mockResolvedValue(true);
       const subscription = { owner: 'mmayadag', repo: 'unsubscribe-me', email: 'dev@example.com' };
 
-      // A different client address: the strict limit on POST /v1/subscriptions is shared with the tests above.
       await request(app.getHttpServer())
         .post('/v1/subscriptions')
-        .set('X-Forwarded-For', '203.0.113.9')
         .send({ ...subscription, period: 6 })
         .expect(201);
       const token = confirmLinkToken();
@@ -259,7 +289,9 @@ describe('API (e2e)', () => {
     });
 
     it('returns 404 for an unknown token', () =>
-      request(app.getHttpServer()).delete(`/v1/subscriptions/${'a'.repeat(32)}`).expect(404));
+      request(app.getHttpServer())
+        .delete(`/v1/subscriptions/${'a'.repeat(32)}`)
+        .expect(404));
 
     it('rejects a malformed token', () =>
       request(app.getHttpServer()).delete('/v1/subscriptions/not-a-token').expect(400));
