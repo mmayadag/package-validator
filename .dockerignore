@@ -1,0 +1,13 @@
+.git
+.github
+.history
+docs
+node_modules
+**/node_modules
+**/dist
+**/coverage
+api/data
+api/test
+**/*.spec.ts
+.env
+*.md

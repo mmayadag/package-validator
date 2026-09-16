@@ -13,7 +13,8 @@ import { RateLimit, STRICT_RATE_LIMIT } from '../common/rate-limit/rate-limit.de
 import { ConfirmedSubscriptionDto, ErrorDto, ScheduledReportDto } from './dto/responses.dto.js';
 import { ScheduleReportDto } from './dto/schedule-report.dto.js';
 import { SubscriptionTokenDto } from './dto/subscription-token.dto.js';
-import { type ConfirmedSubscription, RepoService, type ScheduledReport } from './repo.service.js';
+import type { ConfirmedSubscription, ScheduledReport } from '@package-validator/contracts';
+import { RepoService } from './repo.service.js';
 
 /** Email subscriptions to a repository's report; every route calls GitHub or touches the store, so all are strictly limited. */
 @Controller('repo')

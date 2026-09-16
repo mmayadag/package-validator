@@ -1,31 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import {
+  type ChangeKind,
+  DEPENDENCY_SECTIONS,
+  type DependencySection,
+  type OutdatedDependencies,
+} from '@package-validator/contracts';
 import ncu from 'npm-check-updates';
 import semver from 'semver';
-
-export const DEPENDENCY_SECTIONS = [
-  'dependencies',
-  'devDependencies',
-  'peerDependencies',
-  'optionalDependencies',
-] as const;
-
-export type DependencySection = (typeof DEPENDENCY_SECTIONS)[number];
 
 export type PackageManifest = Partial<Record<DependencySection, Record<string, string>>> & {
   name?: string;
 };
-
-/** Semver distance between the declared range and the latest release; `major` may break. */
-export type ChangeKind = 'major' | 'minor' | 'patch' | 'unknown';
-
-export interface OutdatedDependency {
-  name: string;
-  current: string;
-  latest: string;
-  change: ChangeKind;
-}
-
-export type OutdatedDependencies = Partial<Record<DependencySection, OutdatedDependency[]>>;
 
 @Injectable()
 export class DependencyCheckerService {

@@ -1,10 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { REPORT_PERIODS, type ReportPeriod, type SubscriptionRequest } from '@package-validator/contracts';
 import { IsEmail, IsIn, IsInt } from 'class-validator';
 import { RepositoryRefDto } from './repository-ref.dto.js';
 
-export const REPORT_PERIODS = [6, 12, 24] as const;
-
-export class ScheduleReportDto extends RepositoryRefDto {
+export class ScheduleReportDto extends RepositoryRefDto implements SubscriptionRequest {
   @ApiProperty({ description: 'Address that receives the report after confirming', example: 'dev@example.com', format: 'email' })
   @IsEmail()
   email!: string;
@@ -12,5 +11,5 @@ export class ScheduleReportDto extends RepositoryRefDto {
   @ApiProperty({ description: 'Hours between reports', enum: REPORT_PERIODS, example: 24 })
   @IsInt()
   @IsIn(REPORT_PERIODS)
-  period!: (typeof REPORT_PERIODS)[number];
+  period!: ReportPeriod;
 }

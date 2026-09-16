@@ -53,6 +53,7 @@ The browser talks to a single origin. Caddy serves the Svelte bundle and proxies
 |---|---|---|
 | [`api/`](api) | REST API | NestJS 12 · TypeScript 6 (ESM, strict) · graphql-request · npm-check-updates · SendGrid · Vitest |
 | [`ui/`](ui) | Single-page app | Svelte 5 (runes) · TypeScript · Vite |
+| [`packages/contracts/`](packages/contracts) | Types and constants shared by both, so the API and the UI cannot drift apart | TypeScript |
 | [`docs/`](docs) | Architecture diagram published to GitHub Pages | archify |
 
 ## Quick start
@@ -76,15 +77,15 @@ Without `make`: `cp .env.example .env && docker compose up -d --build`.
 
 ## Development
 
-Requires Node.js 24.15+ (see [`.nvmrc`](.nvmrc)) and Yarn 1 for the API.
+Requires Node.js 24.15+ (see [`.nvmrc`](.nvmrc)). The repository is an npm workspace with one lockfile.
 
 ```bash
-make install     # api: yarn install, ui: npm ci
+make install     # npm ci for every workspace, then builds packages/contracts
 make lint        # oxlint + tsc for the API, svelte-check for the UI
 make test        # API unit + e2e tests, UI tests
 
-cd api && yarn start:dev   # http://localhost:3288
-cd ui && npm run dev       # http://localhost:5173, /repo proxied to the API
+npm run dev:api  # http://localhost:3288
+npm run dev:ui   # http://localhost:5173, /repo proxied to the API
 ```
 
 ## API
@@ -120,6 +121,7 @@ Copy [`.env.example`](.env.example) to `.env`. Only `TOKEN` is required; the rep
 │   │   └── health/       liveness probe
 │   └── test/             e2e tests
 ├── ui/                   Svelte 5 SPA served by Caddy
+├── packages/contracts/   types and constants shared by api and ui
 ├── docs/                 architecture diagram (GitHub Pages)
 ├── docker-compose.yml
 └── Makefile

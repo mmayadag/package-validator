@@ -121,7 +121,7 @@ describe('RepoService', () => {
   });
 
   describe('subscribe', () => {
-    const request = { ...ref, email: 'dev@example.com', period: 12 };
+    const request = { ...ref, email: 'dev@example.com', period: 12 as const };
 
     it('asks a new address to confirm instead of sending the report', async () => {
       givenRepositoryWithPackageJson();

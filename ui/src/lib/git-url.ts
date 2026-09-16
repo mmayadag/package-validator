@@ -1,10 +1,10 @@
-export interface RepositoryRef {
-  owner: string;
-  repo: string;
-}
+import { GITHUB_OWNER_PATTERN, GITHUB_REPO_PATTERN, type RepositoryRef } from '@package-validator/contracts';
 
-const OWNER = '([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))';
-const REPO = '([A-Za-z0-9._-]{1,100}?)';
+export type { RepositoryRef };
+
+const OWNER = `(${GITHUB_OWNER_PATTERN})`;
+// Lazy, so a trailing `.git` is not swallowed by the name.
+const REPO = `(${GITHUB_REPO_PATTERN}?)`;
 
 const PATTERNS = [
   new RegExp(`^(?:https?://)?(?:www\\.)?github\\.com/${OWNER}/${REPO}(?:\\.git)?/?$`),

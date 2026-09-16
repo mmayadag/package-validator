@@ -1,0 +1,35 @@
+{
+  "name": "package-validator",
+  "version": "0.1.0",
+  "description": "Reports outdated package.json dependencies of a GitHub repository, in the browser and by email",
+  "author": {
+    "name": "Murat Mayadağ",
+    "url": "https://github.com/mmayadag"
+  },
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.15"
+  },
+  "workspaces": [
+    "packages/*",
+    "api",
+    "ui"
+  ],
+  "scripts": {
+    "build:contracts": "npm run build --workspace packages/contracts",
+    "build": "npm run build --workspace packages/contracts --workspace api --workspace ui",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run build:contracts && npm run typecheck --workspace api && npm run check --workspace ui",
+    "test": "npm run build:contracts && npm test --workspace api --workspace ui",
+    "test:e2e": "npm run build:contracts && npm run test:e2e --workspace api",
+    "dev:api": "npm run start:dev --workspace api",
+    "dev:ui": "npm run dev --workspace ui"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mmayadag/package-validator.git"
+  },
+  "homepage": "https://github.com/mmayadag/package-validator#readme"
+}

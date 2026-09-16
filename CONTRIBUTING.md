@@ -19,10 +19,10 @@ Thanks for taking the time. This document covers the workflow; the architecture 
 
 ## Development
 
-Requires Node.js 24.15+ (`.nvmrc`), Yarn 1 for the API and Docker for the full stack.
+Requires Node.js 24.15+ (`.nvmrc`) and Docker for the full stack. `api`, `ui` and `packages/contracts` are npm workspaces sharing one lockfile; the contracts package holds the request and response types both apps use and must be built before the others (`make install` does it).
 
 ```bash
-make install     # api: yarn install, ui: npm ci
+make install     # npm ci for every workspace, then builds packages/contracts
 make lint        # oxlint + tsc for the API, svelte-check for the UI
 make test        # API unit + e2e tests, UI tests
 make up          # full stack on http://localhost:8080

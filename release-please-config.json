@@ -46,6 +46,36 @@
       "extra-files": [
         {
           "type": "json",
+          "path": "package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "package-lock.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "package-lock.json",
+          "jsonpath": "$.packages[''].version"
+        },
+        {
+          "type": "json",
+          "path": "package-lock.json",
+          "jsonpath": "$.packages['api'].version"
+        },
+        {
+          "type": "json",
+          "path": "package-lock.json",
+          "jsonpath": "$.packages['ui'].version"
+        },
+        {
+          "type": "json",
+          "path": "package-lock.json",
+          "jsonpath": "$.packages['packages/contracts'].version"
+        },
+        {
+          "type": "json",
           "path": "api/package.json",
           "jsonpath": "$.version"
         },
@@ -56,13 +86,8 @@
         },
         {
           "type": "json",
-          "path": "ui/package-lock.json",
+          "path": "packages/contracts/package.json",
           "jsonpath": "$.version"
-        },
-        {
-          "type": "json",
-          "path": "ui/package-lock.json",
-          "jsonpath": "$.packages[''].version"
         }
       ]
     }

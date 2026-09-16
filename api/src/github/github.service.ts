@@ -1,13 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { RepositoryRef } from '@package-validator/contracts';
 import { GraphQLClient } from 'graphql-request';
 import type { AppConfig } from '../config/configuration.js';
 import { PACKAGE_JSON_QUERY, REPOSITORY_QUERY } from './github.queries.js';
-
-export interface RepositoryRef {
-  owner: string;
-  repo: string;
-}
 
 interface RepositoryResponse {
   repository: { name: string } | null;

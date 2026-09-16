@@ -86,16 +86,18 @@ Invalid values stop the application at startup. `.env` is read from `api/` and f
 
 ## Development
 
-Requires Node.js 24.15+ and Yarn 1.
+Requires Node.js 24.15+. The API is a workspace of the repository root and imports its request and response types from `@package-validator/contracts`, so install and build from the root first:
 
 ```bash
-yarn install
-yarn start:dev      # http://localhost:3288, watch mode
-yarn lint           # oxlint
-yarn typecheck      # tsc --noEmit
-yarn test           # unit tests (Vitest)
-yarn test:e2e       # HTTP tests with GitHub, npm and SendGrid mocked
-yarn build          # dist/
+npm ci                     # at the repository root
+npm run build:contracts    # packages/contracts/dist, needed before anything below
+cd api
+npm run start:dev          # http://localhost:3288, watch mode
+npm run lint               # oxlint
+npm run typecheck          # tsc --noEmit
+npm test                   # unit tests (Vitest)
+npm run test:e2e           # HTTP tests with GitHub, npm and SendGrid mocked
+npm run build              # dist/
 ```
 
 The project is native ESM (`"type": "module"`, `module: nodenext`), so relative imports carry a `.js` extension.

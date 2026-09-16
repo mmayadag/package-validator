@@ -1,14 +1,30 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { REPORT_PERIODS } from './schedule-report.dto.js';
+import {
+  CHANGE_KINDS,
+  type ChangeKind,
+  type ConfirmedSubscription,
+  type ErrorResponse,
+  type HealthResponse,
+  type OutdatedDependencies,
+  type OutdatedDependency,
+  REPORT_PERIODS,
+  type RepoReport,
+  type ReportPeriod,
+  type ScheduledReport,
+  SUBSCRIPTION_STATUSES,
+  type SubscriptionStatus,
+  type SubscriptionSummary,
+  type ValidityResponse,
+} from '@package-validator/contracts';
 
-/** Response shapes for the OpenAPI document; the services return the matching interfaces. */
+/** Response shapes for the OpenAPI document; each implements the contract the services return. */
 
-export class ValidityResponseDto {
+export class ValidityResponseDto implements ValidityResponse {
   @ApiProperty({ description: 'Whether the repository exists and is visible to the API' })
   valid!: boolean;
 }
 
-export class OutdatedDependencyDto {
+export class OutdatedDependencyDto implements OutdatedDependency {
   @ApiProperty({ example: 'express' })
   name!: string;
 
@@ -20,13 +36,13 @@ export class OutdatedDependencyDto {
 
   @ApiProperty({
     description: 'Semver distance between the two; a minor bump below 1.0.0 counts as major',
-    enum: ['major', 'minor', 'patch', 'unknown'],
+    enum: CHANGE_KINDS,
     example: 'major',
   })
-  change!: 'major' | 'minor' | 'patch' | 'unknown';
+  change!: ChangeKind;
 }
 
-export class OutdatedDependenciesDto {
+export class OutdatedDependenciesDto implements OutdatedDependencies {
   @ApiPropertyOptional({ type: [OutdatedDependencyDto] })
   dependencies?: OutdatedDependencyDto[];
 
@@ -40,7 +56,7 @@ export class OutdatedDependenciesDto {
   optionalDependencies?: OutdatedDependencyDto[];
 }
 
-export class RepoReportDto {
+export class RepoReportDto implements RepoReport {
   @ApiProperty({ example: 'mmayadag' })
   owner!: string;
 
@@ -60,18 +76,18 @@ export class RepoReportDto {
   text!: string;
 }
 
-export class SubscriptionSummaryDto {
-  @ApiProperty({ description: 'pending until the address owner confirms by email', enum: ['pending', 'active'] })
-  status!: 'pending' | 'active';
+export class SubscriptionSummaryDto implements SubscriptionSummary {
+  @ApiProperty({ description: 'pending until the address owner confirms by email', enum: SUBSCRIPTION_STATUSES })
+  status!: SubscriptionStatus;
 
   @ApiProperty({ enum: REPORT_PERIODS })
-  periodHours!: number;
+  periodHours!: ReportPeriod;
 
   @ApiProperty({ description: 'When the next report is due; null until the first one was delivered', format: 'date-time', nullable: true, type: String })
   nextReportAt!: string | null;
 }
 
-export class ScheduledReportDto extends RepoReportDto {
+export class ScheduledReportDto extends RepoReportDto implements ScheduledReport {
   @ApiProperty({ description: 'Whether a confirmation request or the report itself was emailed' })
   emailSent!: boolean;
 
@@ -79,7 +95,7 @@ export class ScheduledReportDto extends RepoReportDto {
   subscription!: SubscriptionSummaryDto;
 }
 
-export class ConfirmedSubscriptionDto {
+export class ConfirmedSubscriptionDto implements ConfirmedSubscription {
   @ApiProperty({ example: 'mmayadag' })
   owner!: string;
 
@@ -93,12 +109,12 @@ export class ConfirmedSubscriptionDto {
   subscription!: SubscriptionSummaryDto;
 }
 
-export class HealthDto {
+export class HealthDto implements HealthResponse {
   @ApiProperty({ enum: ['ok'] })
   status!: 'ok';
 }
 
-export class ErrorDto {
+export class ErrorDto implements ErrorResponse {
   @ApiProperty({ example: 404 })
   statusCode!: number;
 
