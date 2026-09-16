@@ -8,6 +8,7 @@ describe('loadConfig', () => {
       publicUrl: 'http://localhost:8080',
       databasePath: 'data/package-validator.db',
       npmRegistry: 'https://registry.npmjs.org',
+      docsEnabled: true,
       github: { endpoint: 'https://api.github.com/graphql', token: 'ghp_test' },
       email: { apiKey: undefined, from: undefined, subject: 'Dependency report' },
     });
@@ -21,6 +22,12 @@ describe('loadConfig', () => {
 
   it('converts PORT to a number', () => {
     expect(loadConfig({ TOKEN: 'ghp_test', PORT: '4000' }).port).toBe(4000);
+  });
+
+  it('turns the documentation off only with the literal false', () => {
+    expect(loadConfig({ TOKEN: 'ghp_test', DOCS_ENABLED: 'false' }).docsEnabled).toBe(false);
+    expect(loadConfig({ TOKEN: 'ghp_test', DOCS_ENABLED: 'true' }).docsEnabled).toBe(true);
+    expect(() => loadConfig({ TOKEN: 'ghp_test', DOCS_ENABLED: 'no' })).toThrow('DOCS_ENABLED');
   });
 
   it('rejects a missing token', () => {

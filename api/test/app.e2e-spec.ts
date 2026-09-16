@@ -355,3 +355,30 @@ describe('API (e2e)', () => {
     });
   });
 });
+
+describe('API without documentation (e2e)', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    vi.stubEnv('TOKEN', 'ghp_e2e');
+    vi.stubEnv('DATABASE_PATH', ':memory:');
+    vi.stubEnv('DOCS_ENABLED', 'false');
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = configureApp(moduleRef.createNestApplication({ logger: false }));
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+    vi.unstubAllEnvs();
+  });
+
+  it('answers 404 for Swagger UI and the OpenAPI document, with the strict CSP', async () => {
+    await request(app.getHttpServer()).get('/docs/openapi.json').expect(404);
+    const { headers } = await request(app.getHttpServer()).get('/docs').expect(404);
+
+    expect(headers['content-security-policy']).toContain("script-src 'self';");
+  });
+
+  it('still serves the API', () => request(app.getHttpServer()).get('/health').expect(200, { status: 'ok' }));
+});

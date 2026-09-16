@@ -17,7 +17,7 @@ NestJS service that reads a public repository's `package.json` through the GitHu
 
 ## Endpoints
 
-Interactive documentation (Swagger UI) is served at [`/docs`](http://localhost:3288/docs) and the OpenAPI 3 document at `/docs/openapi.json`; both are generated from the DTO decorators at startup. In Docker they are reachable through the UI container at http://localhost:8080/docs.
+Interactive documentation (Swagger UI) is served at [`/docs`](http://localhost:3288/docs) and the OpenAPI 3 document at `/docs/openapi.json`; both are generated from the DTO decorators at startup and can be switched off with `DOCS_ENABLED=false`. In Docker they are reachable through the UI container at http://localhost:8080/docs.
 
 | Method   | Path                                   | Body                                            | Success                                   | Errors                                                 |
 | -------- | -------------------------------------- | ----------------------------------------------- | ----------------------------------------- | ------------------------------------------------------ |
@@ -72,6 +72,7 @@ The client address comes from `X-Forwarded-For` when the request arrives from a 
 | `TOKEN`            | yes      |                                  | GitHub token used for the GraphQL API                                              |
 | `GITHUB_ENDPOINT`  | no       | `https://api.github.com/graphql` | GraphQL endpoint (GitHub Enterprise)                                               |
 | `NPM_REGISTRY`     | no       | `https://registry.npmjs.org`     | Registry or mirror queried for latest versions                                     |
+| `DOCS_ENABLED`     | no       | `true`                           | `false` hides Swagger UI and the OpenAPI document (`/docs` answers 404)            |
 | `SENDGRID_API_KEY` | no       |                                  | Enables email reports together with `EMAIL_FROM`                                   |
 | `EMAIL_FROM`       | no       |                                  | Verified sender address                                                            |
 | `EMAIL_SUBJECT`    | no       | `Dependency report`              | Appended to `owner/repo` in the subject                                            |
