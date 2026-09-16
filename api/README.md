@@ -82,6 +82,8 @@ The client address comes from `X-Forwarded-For` when the request arrives from a 
 | `LOG_LEVEL`        | no       | `log`                            | Most verbose level to print: `fatal`, `error`, `warn`, `log`, `debug` or `verbose` |
 | `NODE_ENV`         | no       |                                  | `production` switches logs to one JSON object per line (set by the Docker image)   |
 
+Every response carries an `X-Request-Id` header (the caller's own value when it sends one, otherwise a UUID) and every request except `/health` produces one log line with method, path, status, duration and client address; subscription tokens are masked in the path. In production (JSON logs) every line written while handling a request also carries its `requestId`, so an error can be traced back to the request that caused it. Caddy passes the header through in both directions.
+
 Invalid values stop the application at startup. `.env` is read from `api/` and from the repository root.
 
 ## Development

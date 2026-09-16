@@ -1,4 +1,5 @@
 import { ConsoleLogger, type ConsoleLoggerOptions, type LogLevel } from '@nestjs/common';
+import { currentRequestId } from './common/request-log/request-context.js';
 
 const LEVELS: LogLevel[] = ['fatal', 'error', 'warn', 'log', 'debug', 'verbose'];
 
@@ -12,8 +13,22 @@ export function loggerOptions(env: NodeJS.ProcessEnv): ConsoleLoggerOptions {
   const index = LEVELS.indexOf(level);
   return {
     json: env.NODE_ENV === 'production',
+    // Structured params ({ requestId, status, ... }) become top-level fields of the JSON line.
+    flattenParams: true,
     logLevels: LEVELS.slice(0, (index === -1 ? LEVELS.indexOf('log') : index) + 1),
   };
 }
 
-export const createLogger = (env: NodeJS.ProcessEnv): ConsoleLogger => new ConsoleLogger(loggerOptions(env));
+/** ConsoleLogger that stamps every JSON line written during a request with that request's id. */
+export class AppLogger extends ConsoleLogger {
+  protected override getJsonLogObject(
+    message: unknown,
+    options: Parameters<ConsoleLogger['getJsonLogObject']>[1],
+  ): ReturnType<ConsoleLogger['getJsonLogObject']> {
+    const requestId = currentRequestId();
+    const logObject = super.getJsonLogObject(message, options);
+    return requestId === undefined || 'requestId' in logObject ? logObject : { ...logObject, requestId };
+  }
+}
+
+export const createLogger = (env: NodeJS.ProcessEnv): AppLogger => new AppLogger(loggerOptions(env));
