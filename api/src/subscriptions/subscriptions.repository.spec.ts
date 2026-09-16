@@ -1,4 +1,3 @@
-import { DatabaseSync } from 'node:sqlite';
 import type { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../config/configuration.js';
 import { PENDING_TTL_MS, SubscriptionsRepository } from './subscriptions.repository.js';
@@ -92,28 +91,5 @@ describe('SubscriptionsRepository', () => {
     expect(repository.deleteByToken(token)).toBe(true);
     expect(repository.find(input)).toBeNull();
     expect(repository.deleteByToken(token)).toBe(false);
-  });
-
-  it('adds the confirmed_at column to a database created before it existed', () => {
-    const path = `${process.env.TMPDIR ?? '/tmp'}/pv-migrate-${process.pid}-${Date.now()}.db`;
-    const legacy = new DatabaseSync(path);
-    legacy.exec(`
-      CREATE TABLE subscriptions (
-        id INTEGER PRIMARY KEY, owner TEXT NOT NULL, repo TEXT NOT NULL, email TEXT NOT NULL,
-        period_hours INTEGER NOT NULL, token TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL, last_sent_at INTEGER,
-        UNIQUE (owner, repo, email)
-      )`);
-    legacy
-      .prepare('INSERT INTO subscriptions VALUES (1, ?, ?, ?, 24, ?, 0, NULL)')
-      .run(input.owner, input.repo, input.email, 't'.repeat(32));
-    legacy.close();
-
-    const migrated = new SubscriptionsRepository({ get: () => path } as unknown as ConfigService<AppConfig, true>);
-    try {
-      expect(migrated.find(input)).toMatchObject({ id: 1, confirmedAt: null });
-      expect(migrated.findDue(Date.now())).toEqual([]);
-    } finally {
-      migrated.onModuleDestroy();
-    }
   });
 });

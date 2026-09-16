@@ -2,9 +2,10 @@ import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync, type StatementSync } from 'node:sqlite';
-import { Injectable, type OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../config/configuration.js';
+import { migrate } from './migrations.js';
 
 export const HOUR_MS = 3_600_000;
 /** Unconfirmed subscriptions are removed after this long. */
@@ -27,29 +28,9 @@ export interface Subscription {
 export type SubscriptionKey = Pick<Subscription, 'owner' | 'repo' | 'email'>;
 export type NewSubscription = SubscriptionKey & Pick<Subscription, 'periodHours'>;
 
-// GitHub names and email addresses are case-insensitive, so the unique key is too.
-const SCHEMA = `
-  CREATE TABLE IF NOT EXISTS subscriptions (
-    id           INTEGER PRIMARY KEY,
-    owner        TEXT    NOT NULL COLLATE NOCASE,
-    repo         TEXT    NOT NULL COLLATE NOCASE,
-    email        TEXT    NOT NULL COLLATE NOCASE,
-    period_hours INTEGER NOT NULL CHECK (period_hours > 0),
-    token        TEXT    NOT NULL UNIQUE,
-    created_at   INTEGER NOT NULL,
-    confirmed_at INTEGER,
-    last_sent_at INTEGER,
-    UNIQUE (owner, repo, email)
-  );
-`;
-
-/** Columns added after the first release, applied to databases created before them. */
-const MIGRATIONS: Array<{ column: string; ddl: string }> = [
-  { column: 'confirmed_at', ddl: 'ALTER TABLE subscriptions ADD COLUMN confirmed_at INTEGER' },
-];
-
 @Injectable()
 export class SubscriptionsRepository implements OnModuleDestroy {
+  private readonly logger = new Logger(SubscriptionsRepository.name);
   private readonly db: DatabaseSync;
   private readonly upsertStatement: StatementSync;
   private readonly findStatement: StatementSync;
@@ -68,8 +49,10 @@ export class SubscriptionsRepository implements OnModuleDestroy {
 
     this.db = new DatabaseSync(path);
     this.db.exec('PRAGMA journal_mode = WAL');
-    this.db.exec(SCHEMA);
-    this.migrate();
+    const { from, to } = migrate(this.db);
+    if (to !== from) {
+      this.logger.log(`Migrated the database schema from version ${from} to ${to}`);
+    }
 
     this.upsertStatement = this.db.prepare(`
       INSERT INTO subscriptions (owner, repo, email, period_hours, token, created_at)
@@ -144,17 +127,6 @@ export class SubscriptionsRepository implements OnModuleDestroy {
 
   onModuleDestroy(): void {
     this.db.close();
-  }
-
-  private migrate(): void {
-    const columns = new Set(
-      (this.db.prepare('PRAGMA table_info(subscriptions)').all() as Array<{ name: string }>).map(({ name }) => name),
-    );
-    for (const { column, ddl } of MIGRATIONS) {
-      if (!columns.has(column)) {
-        this.db.exec(ddl);
-      }
-    }
   }
 }
 
