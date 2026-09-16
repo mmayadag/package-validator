@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import type { AppConfig } from '../config/configuration.js';
 import { EmailService } from '../email/email.service.js';
-import { unsubscribeUrl } from '../subscriptions/subscription-links.js';
-import { SubscriptionsRepository } from '../subscriptions/subscriptions.repository.js';
-import { RepoService } from './repo.service.js';
+import { ReportService } from '../report/report.service.js';
+import { unsubscribeUrl } from './subscription-links.js';
+import { SubscriptionsRepository } from './subscriptions.repository.js';
 
 export interface DeliveryRun {
   due: number;
@@ -24,7 +24,7 @@ export class ReportSchedulerService {
   private running = false;
 
   constructor(
-    private readonly repoService: RepoService,
+    private readonly reports: ReportService,
     private readonly subscriptions: SubscriptionsRepository,
     private readonly email: EmailService,
     config: ConfigService<AppConfig, true>,
@@ -60,7 +60,7 @@ export class ReportSchedulerService {
       for (const subscription of due) {
         const ref = { owner: subscription.owner, repo: subscription.repo };
         try {
-          const report = await this.repoService.buildReport(ref);
+          const report = await this.reports.buildReport(ref);
           const delivered = await this.email.sendReport(
             subscription.email,
             ref,

@@ -9,12 +9,12 @@ import {
   ApiTooManyRequestsResponse,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
+import type { ConfirmedSubscription, ScheduledReport } from '@package-validator/contracts';
 import { RateLimit, STRICT_RATE_LIMIT } from '../common/rate-limit/rate-limit.decorator.js';
+import { SubscriptionService } from '../subscriptions/subscription.service.js';
 import { ConfirmedSubscriptionDto, ErrorDto, ScheduledReportDto } from './dto/responses.dto.js';
 import { ScheduleReportDto } from './dto/schedule-report.dto.js';
 import { SubscriptionTokenDto } from './dto/subscription-token.dto.js';
-import type { ConfirmedSubscription, ScheduledReport } from '@package-validator/contracts';
-import { RepoService } from './repo.service.js';
 
 /** Email subscriptions to a repository's report; every route calls GitHub or touches the store, so all are strictly limited. */
 @Controller('repo')
@@ -23,7 +23,7 @@ import { RepoService } from './repo.service.js';
 @ApiBadRequestResponse({ description: 'Validation failed', type: ErrorDto })
 @ApiTooManyRequestsResponse({ description: 'Rate limit exceeded; see Retry-After', type: ErrorDto })
 export class SubscriptionsController {
-  constructor(private readonly repoService: RepoService) {}
+  constructor(private readonly subscriptions: SubscriptionService) {}
 
   @Post('schedule')
   @HttpCode(HttpStatus.OK)
@@ -36,7 +36,7 @@ export class SubscriptionsController {
   @ApiNotFoundResponse({ description: 'Repository does not exist or is not public', type: ErrorDto })
   @ApiUnprocessableEntityResponse({ description: 'No package.json on the default branch, or it is not valid JSON', type: ErrorDto })
   schedule(@Body() { owner, repo, email, period }: ScheduleReportDto): Promise<ScheduledReport> {
-    return this.repoService.subscribe({ owner, repo, email, period });
+    return this.subscriptions.subscribe({ owner, repo, email, period });
   }
 
   @Post('subscriptions/:token/confirm')
@@ -45,7 +45,7 @@ export class SubscriptionsController {
   @ApiOkResponse({ type: ConfirmedSubscriptionDto })
   @ApiNotFoundResponse({ description: 'Unknown token, or the confirmation window of 24 hours has passed', type: ErrorDto })
   confirm(@Param() { token }: SubscriptionTokenDto): Promise<ConfirmedSubscription> {
-    return this.repoService.confirm(token);
+    return this.subscriptions.confirm(token);
   }
 
   @Delete('subscriptions/:token')
@@ -54,6 +54,6 @@ export class SubscriptionsController {
   @ApiNoContentResponse({ description: 'Subscription removed' })
   @ApiNotFoundResponse({ description: 'Unknown token or already removed', type: ErrorDto })
   unsubscribe(@Param() { token }: SubscriptionTokenDto): void {
-    this.repoService.unsubscribe(token);
+    this.subscriptions.unsubscribe(token);
   }
 }

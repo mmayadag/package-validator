@@ -115,9 +115,10 @@ Copy [`.env.example`](.env.example) to `.env`. Only `TOKEN` is required; the rep
 │   │   ├── config/       typed, validated environment
 │   │   ├── github/       GraphQL client
 │   │   ├── dependencies/ npm registry client and outdated check
-│   │   ├── report/       HTML and text rendering
+│   │   ├── report/       report building, one-hour cache, HTML and text rendering
 │   │   ├── email/        SendGrid delivery
-│   │   ├── repo/         routes, DTOs and use case
+│   │   ├── subscriptions/ subscription lifecycle, hourly delivery, SQLite store
+│   │   ├── repo/         routes and DTOs
 │   │   └── health/       liveness probe
 │   └── test/             e2e tests
 ├── ui/                   Svelte 5 SPA served by Caddy

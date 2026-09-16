@@ -8,28 +8,28 @@ import {
   ApiTooManyRequestsResponse,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
+import type { RepoReport, ValidityResponse } from '@package-validator/contracts';
 import { RateLimit, STRICT_RATE_LIMIT } from '../common/rate-limit/rate-limit.decorator.js';
+import { GithubService } from '../github/github.service.js';
+import { ReportService } from '../report/report.service.js';
 import { RepositoryRefDto } from './dto/repository-ref.dto.js';
 import { ErrorDto, RepoReportDto, ValidityResponseDto } from './dto/responses.dto.js';
-import type { RepoReport } from '@package-validator/contracts';
-import { RepoService } from './repo.service.js';
-
-interface ValidityResponse {
-  valid: boolean;
-}
 
 @Controller('repo')
 @ApiTags('repositories')
 @ApiBadRequestResponse({ description: 'Validation failed', type: ErrorDto })
 @ApiTooManyRequestsResponse({ description: 'Rate limit exceeded; see Retry-After', type: ErrorDto })
 export class RepoController {
-  constructor(private readonly repoService: RepoService) {}
+  constructor(
+    private readonly github: GithubService,
+    private readonly reports: ReportService,
+  ) {}
 
   @Get('isValid/:owner/:repo')
   @ApiOperation({ summary: 'Check that a repository exists and is public' })
   @ApiOkResponse({ type: ValidityResponseDto })
   async isValidByPath(@Param() ref: RepositoryRefDto): Promise<ValidityResponse> {
-    return { valid: await this.repoService.isValid(ref) };
+    return { valid: await this.github.repositoryExists(ref) };
   }
 
   @Post('isValid')
@@ -37,7 +37,7 @@ export class RepoController {
   @ApiOperation({ summary: 'Check that a repository exists and is public (body variant)' })
   @ApiOkResponse({ type: ValidityResponseDto })
   async isValid(@Body() ref: RepositoryRefDto): Promise<ValidityResponse> {
-    return { valid: await this.repoService.isValid(ref) };
+    return { valid: await this.github.repositoryExists(ref) };
   }
 
   @Get('details/:owner/:repo')
@@ -47,6 +47,6 @@ export class RepoController {
   @ApiNotFoundResponse({ description: 'Repository does not exist or is not public', type: ErrorDto })
   @ApiUnprocessableEntityResponse({ description: 'No package.json on the default branch, or it is not valid JSON', type: ErrorDto })
   details(@Param() ref: RepositoryRefDto): Promise<RepoReport> {
-    return this.repoService.buildReport(ref);
+    return this.reports.buildReport(ref);
   }
 }
