@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help up down logs ps install build test lint
+.PHONY: help up down logs ps install build test smoke lint format
 
 help: ## List available targets
 	@grep -E '^[a-z]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -27,9 +27,17 @@ test: ## Run api unit + e2e tests and ui tests
 	npm test
 	npm run test:e2e
 
-lint: ## Lint and type-check every workspace
+smoke: ## Browser smoke test against the running stack (make up first; needs TOKEN in .env)
+	npx playwright install chromium
+	npm run test:smoke
+
+lint: ## Format check, lint and type-check every workspace
+	npm run format:check
 	npm run lint
 	npm run typecheck
+
+format: ## Rewrite every file with prettier
+	npm run format
 
 .env:
 	cp .env.example .env

@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+test-results
+playwright-report
+package-lock.json
+CHANGELOG.md
+api/data
+docs/index.html
+docs/screenshots
+.history

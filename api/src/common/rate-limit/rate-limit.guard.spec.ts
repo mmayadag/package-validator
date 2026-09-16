@@ -93,4 +93,14 @@ describe('RateLimitGuard', () => {
       expect(call(handlers.health).allowed).toBe(true);
     }
   });
+
+  it('starts every window afresh after a reset', () => {
+    call(handlers.strict);
+    call(handlers.strict);
+    expect(call(handlers.strict).allowed).toBe(false);
+
+    guard.reset();
+
+    expect(call(handlers.strict).allowed).toBe(true);
+  });
 });

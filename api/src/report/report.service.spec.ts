@@ -90,6 +90,16 @@ describe('ReportService', () => {
       expect(github.getPackageJson).toHaveBeenCalledTimes(2);
     });
 
+    it('rebuilds after the cache is cleared', async () => {
+      givenRepositoryWithPackageJson();
+
+      await service.buildReport(ref);
+      service.clearCache();
+      await service.buildReport(ref);
+
+      expect(github.getPackageJson).toHaveBeenCalledTimes(2);
+    });
+
     it('does not cache failures', async () => {
       github.repositoryExists.mockResolvedValueOnce(false);
       await expect(service.buildReport(ref)).rejects.toBeInstanceOf(NotFoundException);

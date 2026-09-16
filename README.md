@@ -10,8 +10,8 @@ Point it at a public GitHub repository and get a report of which `package.json` 
 
 ## Screenshots
 
-| Check a repository | Report |
-|---|---|
+| Check a repository                                                                                             | Report                                                                                                            |
+| -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | ![The form with a validated repository URL, an email field and the delivery period](docs/screenshots/form.png) | ![Outdated dependencies grouped by section, each with a major, minor or patch badge](docs/screenshots/report.png) |
 
 ## How it works
@@ -49,12 +49,12 @@ sequenceDiagram
 
 The browser talks to a single origin. Caddy serves the Svelte bundle and proxies `/v1/*` to the NestJS API, which reads `package.json` from GitHub's GraphQL API, checks every dependency against the npm registry and optionally sends the report through SendGrid. The interactive diagram is generated from [`docs/architecture.json`](docs/architecture.json) with [archify](https://github.com/tt-a1i/archify) and published by the [Pages workflow](.github/workflows/pages.yml).
 
-| Directory | Role | Stack |
-|---|---|---|
-| [`api/`](api) | REST API | NestJS 12 · TypeScript 6 (ESM, strict) · graphql-request · npm registry · SendGrid · Vitest |
-| [`ui/`](ui) | Single-page app | Svelte 5 (runes) · TypeScript · Vite |
-| [`packages/contracts/`](packages/contracts) | Types and constants shared by both, so the API and the UI cannot drift apart | TypeScript |
-| [`docs/`](docs) | Architecture diagram published to GitHub Pages | archify |
+| Directory                                   | Role                                                                         | Stack                                                                                       |
+| ------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [`api/`](api)                               | REST API                                                                     | NestJS 12 · TypeScript 6 (ESM, strict) · graphql-request · npm registry · SendGrid · Vitest |
+| [`ui/`](ui)                                 | Single-page app                                                              | Svelte 5 (runes) · TypeScript · Vite                                                        |
+| [`packages/contracts/`](packages/contracts) | Types and constants shared by both, so the API and the UI cannot drift apart | TypeScript                                                                                  |
+| [`docs/`](docs)                             | Architecture diagram published to GitHub Pages                               | archify                                                                                     |
 
 ## Quick start
 
@@ -66,12 +66,12 @@ make up          # creates .env on the first run, then builds and starts the sta
 
 Set `TOKEN` in `.env` to a GitHub token, run `make up` again and open http://localhost:8080.
 
-| Command | Description |
-|---|---|
-| `make up` | Build the images and start the stack in the background |
-| `make down` | Stop and remove the containers |
-| `make logs` | Follow the logs |
-| `make ps` | Container status (the UI waits for a healthy API) |
+| Command     | Description                                            |
+| ----------- | ------------------------------------------------------ |
+| `make up`   | Build the images and start the stack in the background |
+| `make down` | Stop and remove the containers                         |
+| `make logs` | Follow the logs                                        |
+| `make ps`   | Container status (the UI waits for a healthy API)      |
 
 Without `make`: `cp .env.example .env && docker compose up -d --build`.
 
@@ -81,8 +81,9 @@ Requires Node.js 24.15+ (see [`.nvmrc`](.nvmrc)). The repository is an npm works
 
 ```bash
 make install     # npm ci for every workspace, then builds packages/contracts
-make lint        # oxlint + tsc for the API, svelte-check for the UI
-make test        # API unit + e2e tests, UI tests
+make lint        # prettier --check, oxlint, tsc for the API, svelte-check for the UI
+make test        # API unit + e2e tests, UI unit + component tests
+make smoke       # Playwright against the running stack (make up first)
 
 npm run dev:api  # http://localhost:3288
 npm run dev:ui   # http://localhost:5173, /v1 proxied to the API
@@ -90,14 +91,14 @@ npm run dev:ui   # http://localhost:5173, /v1 proxied to the API
 
 ## API
 
-| Method | Path | Body | Response |
-|---|---|---|---|
-| `GET` | `/health` | | `{ "status": "ok" }` |
-| `GET` | `/v1/repositories/:owner/:repo` | | `{ "valid": boolean }` |
-| `GET` | `/v1/repositories/:owner/:repo/report` | | Report, `404` unknown repo, `422` no `package.json` |
-| `POST` | `/v1/subscriptions` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | `201` report and a pending subscription; a confirmation email is sent |
-| `POST` | `/v1/subscriptions/:token/confirm` | | Activates the subscription and sends the first report |
-| `DELETE` | `/v1/subscriptions/:token` | | `204`, `404` unknown token |
+| Method   | Path                                   | Body                                            | Response                                                              |
+| -------- | -------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------- |
+| `GET`    | `/health`                              |                                                 | `{ "status": "ok" }`                                                  |
+| `GET`    | `/v1/repositories/:owner/:repo`        |                                                 | `{ "valid": boolean }`                                                |
+| `GET`    | `/v1/repositories/:owner/:repo/report` |                                                 | Report, `404` unknown repo, `422` no `package.json`                   |
+| `POST`   | `/v1/subscriptions`                    | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | `201` report and a pending subscription; a confirmation email is sent |
+| `POST`   | `/v1/subscriptions/:token/confirm`     |                                                 | Activates the subscription and sends the first report                 |
+| `DELETE` | `/v1/subscriptions/:token`             |                                                 | `204`, `404` unknown token                                            |
 
 Swagger UI is served at `/docs` (http://localhost:8080/docs with Docker) and the OpenAPI document at `/docs/openapi.json`. Response shapes, status codes and module layout are documented in [`api/README.md`](api/README.md).
 
