@@ -56,7 +56,10 @@ export function renderReport({ owner, repo }: RepositoryRef, outdated: OutdatedD
 
   const text = sections
     .map(([section, list]) =>
-      [section, ...list.map(({ name, current, latest, change }) => `  ${name}: ${current} -> ${latest} (${change})`)].join('\n'),
+      [
+        section,
+        ...list.map(({ name, current, latest, change }) => `  ${name}: ${current} -> ${latest} (${change})`),
+      ].join('\n'),
     )
     .join('\n\n');
 

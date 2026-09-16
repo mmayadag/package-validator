@@ -10,8 +10,8 @@ permissions:
   pull-requests: write
 
 env:
-  RELEASE_PLEASE_VERSION: "17"
-  RELEASE_ATTEMPTS: "8"
+  RELEASE_PLEASE_VERSION: '17'
+  RELEASE_ATTEMPTS: '8'
   # A PAT lets CI run on the release pull request; GITHUB_TOKEN cannot trigger workflows.
   RELEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
@@ -27,10 +27,12 @@ jobs:
       # GitHub's GraphQL commit-history query fails intermittently with
       # "Something went wrong while executing your query".
       - name: Open or update the release pull request
-        run: ./.github/scripts/retry.sh "$RELEASE_ATTEMPTS" npx --yes "release-please@$RELEASE_PLEASE_VERSION" release-pr
+        run:
+          ./.github/scripts/retry.sh "$RELEASE_ATTEMPTS" npx --yes "release-please@$RELEASE_PLEASE_VERSION" release-pr
           --token="$RELEASE_TOKEN" --repo-url="$GITHUB_REPOSITORY" --target-branch=main
           --config-file=release-please-config.json --manifest-file=.release-please-manifest.json
       - name: Publish the GitHub release for a merged release pull request
-        run: ./.github/scripts/retry.sh "$RELEASE_ATTEMPTS" npx --yes "release-please@$RELEASE_PLEASE_VERSION" github-release
+        run:
+          ./.github/scripts/retry.sh "$RELEASE_ATTEMPTS" npx --yes "release-please@$RELEASE_PLEASE_VERSION" github-release
           --token="$RELEASE_TOKEN" --repo-url="$GITHUB_REPOSITORY" --target-branch=main
           --config-file=release-please-config.json --manifest-file=.release-please-manifest.json

@@ -3,13 +3,8 @@
   "compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "lib": [
-      "ES2023"
-    ],
-    "types": [
-      "node",
-      "vitest/globals"
-    ],
+    "lib": ["ES2023"],
+    "types": ["node", "vitest/globals"],
     "noUncheckedIndexedAccess": false,
     "resolveJsonModule": true,
     "experimentalDecorators": true,
@@ -20,10 +15,5 @@
     "outDir": "./dist",
     "rootDir": "."
   },
-  "include": [
-    "src",
-    "test",
-    "vitest.config.ts",
-    "vitest.config.e2e.ts"
-  ]
+  "include": ["src", "test", "vitest.config.ts", "vitest.config.e2e.ts"]
 }

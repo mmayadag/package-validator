@@ -4,29 +4,29 @@ NestJS service that reads a public repository's `package.json` through the GitHu
 
 ## Modules
 
-| Module | Responsibility |
-|---|---|
-| `config` | Loads and validates environment variables into a typed `AppConfig` |
-| `github` | GraphQL client: repository lookup and `HEAD:package.json` contents |
-| `dependencies` | Reads the `latest` dist-tag of every declared package from the npm registry (8 requests in flight, 5 s timeout) and groups what is outdated by section |
-| `report` | `ReportService` builds the report (GitHub → registry → render) and keeps it for an hour; the renderer escapes every value |
-| `email` | Confirmation requests and reports through SendGrid; a no-op when it is not configured |
+| Module          | Responsibility                                                                                                                                            |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `config`        | Loads and validates environment variables into a typed `AppConfig`                                                                                        |
+| `github`        | GraphQL client: repository lookup and `HEAD:package.json` contents                                                                                        |
+| `dependencies`  | Reads the `latest` dist-tag of every declared package from the npm registry (8 requests in flight, 5 s timeout) and groups what is outdated by section    |
+| `report`        | `ReportService` builds the report (GitHub → registry → render) and keeps it for an hour; the renderer escapes every value                                 |
+| `email`         | Confirmation requests and reports through SendGrid; a no-op when it is not configured                                                                     |
 | `subscriptions` | `SubscriptionService` (request, confirm, deliver, remove), the hourly `ReportSchedulerService` and the SQLite store (`node:sqlite`, no native dependency) |
-| `routes` | HTTP layer only: the `/v1` controllers (`RepositoriesController`, `SubscriptionsController`) and the DTOs |
-| `health` | `GET /health` liveness probe |
+| `routes`        | HTTP layer only: the `/v1` controllers (`RepositoriesController`, `SubscriptionsController`) and the DTOs                                                 |
+| `health`        | `GET /health` liveness probe                                                                                                                              |
 
 ## Endpoints
 
 Interactive documentation (Swagger UI) is served at [`/docs`](http://localhost:3288/docs) and the OpenAPI 3 document at `/docs/openapi.json`; both are generated from the DTO decorators at startup. In Docker they are reachable through the UI container at http://localhost:8080/docs.
 
-| Method | Path | Body | Success | Errors |
-|---|---|---|---|---|
-| `GET` | `/health` | | `200 { status: "ok" }` | |
-| `GET` | `/v1/repositories/:owner/:repo` | | `200 { valid }` | `400` invalid name |
-| `GET` | `/v1/repositories/:owner/:repo/report` | | `200` report | `404` unknown repo, `422` no or invalid `package.json` |
-| `POST` | `/v1/subscriptions` | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | `201` report, `emailSent`, `subscription` | `400`, `404`, `422` |
-| `POST` | `/v1/subscriptions/:token/confirm` | | `200` owner, repo, email, `subscription` | `400` malformed token, `404` unknown or expired |
-| `DELETE` | `/v1/subscriptions/:token` | | `204` | `400` malformed token, `404` unknown token |
+| Method   | Path                                   | Body                                            | Success                                   | Errors                                                 |
+| -------- | -------------------------------------- | ----------------------------------------------- | ----------------------------------------- | ------------------------------------------------------ |
+| `GET`    | `/health`                              |                                                 | `200 { status: "ok" }`                    |                                                        |
+| `GET`    | `/v1/repositories/:owner/:repo`        |                                                 | `200 { valid }`                           | `400` invalid name                                     |
+| `GET`    | `/v1/repositories/:owner/:repo/report` |                                                 | `200` report                              | `404` unknown repo, `422` no or invalid `package.json` |
+| `POST`   | `/v1/subscriptions`                    | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | `201` report, `emailSent`, `subscription` | `400`, `404`, `422`                                    |
+| `POST`   | `/v1/subscriptions/:token/confirm`     |                                                 | `200` owner, repo, email, `subscription`  | `400` malformed token, `404` unknown or expired        |
+| `DELETE` | `/v1/subscriptions/:token`             |                                                 | `204`                                     | `400` malformed token, `404` unknown token             |
 
 A report looks like this:
 
@@ -67,20 +67,20 @@ The client address comes from `X-Forwarded-For` when the request arrives from a 
 
 ## Configuration
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `TOKEN` | yes | | GitHub token used for the GraphQL API |
-| `GITHUB_ENDPOINT` | no | `https://api.github.com/graphql` | GraphQL endpoint (GitHub Enterprise) |
-| `NPM_REGISTRY` | no | `https://registry.npmjs.org` | Registry or mirror queried for latest versions |
-| `SENDGRID_API_KEY` | no | | Enables email reports together with `EMAIL_FROM` |
-| `EMAIL_FROM` | no | | Verified sender address |
-| `EMAIL_SUBJECT` | no | `Dependency report` | Appended to `owner/repo` in the subject |
-| `PUBLIC_URL` | no | `http://localhost:8080` | Address of the UI, used for confirmation and unsubscribe links |
-| `DATABASE_PATH` | no | `data/package-validator.db` | SQLite file for subscriptions (`:memory:` for tests) |
-| `PORT` | no | `3288` | HTTP port |
-| `CORS_ORIGIN` | no | | Comma-separated origins; CORS stays off when unset |
-| `LOG_LEVEL` | no | `log` | Most verbose level to print: `fatal`, `error`, `warn`, `log`, `debug` or `verbose` |
-| `NODE_ENV` | no | | `production` switches logs to one JSON object per line (set by the Docker image) |
+| Variable           | Required | Default                          | Description                                                                        |
+| ------------------ | -------- | -------------------------------- | ---------------------------------------------------------------------------------- |
+| `TOKEN`            | yes      |                                  | GitHub token used for the GraphQL API                                              |
+| `GITHUB_ENDPOINT`  | no       | `https://api.github.com/graphql` | GraphQL endpoint (GitHub Enterprise)                                               |
+| `NPM_REGISTRY`     | no       | `https://registry.npmjs.org`     | Registry or mirror queried for latest versions                                     |
+| `SENDGRID_API_KEY` | no       |                                  | Enables email reports together with `EMAIL_FROM`                                   |
+| `EMAIL_FROM`       | no       |                                  | Verified sender address                                                            |
+| `EMAIL_SUBJECT`    | no       | `Dependency report`              | Appended to `owner/repo` in the subject                                            |
+| `PUBLIC_URL`       | no       | `http://localhost:8080`          | Address of the UI, used for confirmation and unsubscribe links                     |
+| `DATABASE_PATH`    | no       | `data/package-validator.db`      | SQLite file for subscriptions (`:memory:` for tests)                               |
+| `PORT`             | no       | `3288`                           | HTTP port                                                                          |
+| `CORS_ORIGIN`      | no       |                                  | Comma-separated origins; CORS stays off when unset                                 |
+| `LOG_LEVEL`        | no       | `log`                            | Most verbose level to print: `fatal`, `error`, `warn`, `log`, `debug` or `verbose` |
+| `NODE_ENV`         | no       |                                  | `production` switches logs to one JSON object per line (set by the Docker image)   |
 
 Invalid values stop the application at startup. `.env` is read from `api/` and from the repository root.
 

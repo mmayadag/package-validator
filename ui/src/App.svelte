@@ -18,8 +18,8 @@
     </div>
     <h1>Package Validator</h1>
     <p class="lead">
-      Point it at a public GitHub repository and see which <code>package.json</code> dependencies have newer
-      versions. The report is emailed to you as well.
+      Point it at a public GitHub repository and see which <code>package.json</code> dependencies have newer versions. The
+      report is emailed to you as well.
     </p>
   </header>
 

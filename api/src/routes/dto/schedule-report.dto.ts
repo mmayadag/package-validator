@@ -4,7 +4,11 @@ import { IsEmail, IsIn, IsInt } from 'class-validator';
 import { RepositoryRefDto } from './repository-ref.dto.js';
 
 export class ScheduleReportDto extends RepositoryRefDto implements SubscriptionRequest {
-  @ApiProperty({ description: 'Address that receives the report after confirming', example: 'dev@example.com', format: 'email' })
+  @ApiProperty({
+    description: 'Address that receives the report after confirming',
+    example: 'dev@example.com',
+    format: 'email',
+  })
   @IsEmail()
   email!: string;
 

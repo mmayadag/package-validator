@@ -13,7 +13,9 @@ describe('renderReport', () => {
     expect(html).toContain('<caption>dependencies</caption>');
     expect(html).toContain('<td>express</td><td>^4.0.0</td><td>^5.1.0</td><td style="color:#cf222e">major</td>');
     expect(html).toContain('<caption>devDependencies</caption>');
-    expect(text).toContain('Outdated dependencies of mmayadag/package-validator: 2 outdated dependencies, 1 with a major version jump');
+    expect(text).toContain(
+      'Outdated dependencies of mmayadag/package-validator: 2 outdated dependencies, 1 with a major version jump',
+    );
     expect(text).toContain('  vitest: ^5.0.0 -> ^5.0.1 (patch)');
   });
 

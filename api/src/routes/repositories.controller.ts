@@ -37,7 +37,10 @@ export class RepositoriesController {
   @ApiOperation({ summary: 'Report outdated dependencies of package.json on the default branch' })
   @ApiOkResponse({ type: RepoReportDto })
   @ApiNotFoundResponse({ description: 'Repository does not exist or is not public', type: ErrorDto })
-  @ApiUnprocessableEntityResponse({ description: 'No package.json on the default branch, or it is not valid JSON', type: ErrorDto })
+  @ApiUnprocessableEntityResponse({
+    description: 'No package.json on the default branch, or it is not valid JSON',
+    type: ErrorDto,
+  })
   report(@Param() ref: RepositoryRefDto): Promise<RepoReport> {
     return this.reports.buildReport(ref);
   }

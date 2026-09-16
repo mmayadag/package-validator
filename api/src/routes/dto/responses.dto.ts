@@ -65,7 +65,10 @@ export class RepoReportDto implements RepoReport {
   @ApiProperty({ description: 'Only sections with outdated packages are present' })
   outdated!: OutdatedDependenciesDto;
 
-  @ApiProperty({ description: 'When the npm registry was queried; reports are reused for up to an hour', format: 'date-time' })
+  @ApiProperty({
+    description: 'When the npm registry was queried; reports are reused for up to an hour',
+    format: 'date-time',
+  })
   generatedAt!: string;
 
   @ApiProperty({ description: 'HTML tables, values escaped' })
@@ -82,7 +85,12 @@ export class SubscriptionSummaryDto implements SubscriptionSummary {
   @ApiProperty({ enum: REPORT_PERIODS })
   periodHours!: ReportPeriod;
 
-  @ApiProperty({ description: 'When the next report is due; null until the first one was delivered', format: 'date-time', nullable: true, type: String })
+  @ApiProperty({
+    description: 'When the next report is due; null until the first one was delivered',
+    format: 'date-time',
+    nullable: true,
+    type: String,
+  })
   nextReportAt!: string | null;
 }
 
@@ -112,7 +120,10 @@ export class ErrorDto implements ErrorResponse {
   @ApiProperty({ example: 404 })
   statusCode!: number;
 
-  @ApiProperty({ description: 'One message, or one per failed validation rule', oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }] })
+  @ApiProperty({
+    description: 'One message, or one per failed validation rule',
+    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+  })
   message!: string | string[];
 
   @ApiPropertyOptional({ example: 'Not Found' })

@@ -1,17 +1,7 @@
 // class-validator decorators need the Reflect metadata API even outside a Nest context.
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
-import {
-  IsEmail,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsUrl,
-  Max,
-  Min,
-  validateSync,
-} from 'class-validator';
+import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
 
 export interface AppConfig {
   port: number;
@@ -86,9 +76,7 @@ export function loadConfig(env: Record<string, unknown>): AppConfig {
   });
   const errors = validateSync(vars);
   if (errors.length > 0) {
-    const details = errors
-      .flatMap((error) => Object.values(error.constraints ?? {}))
-      .join('; ');
+    const details = errors.flatMap((error) => Object.values(error.constraints ?? {})).join('; ');
     throw new Error(`Invalid environment configuration: ${details}`);
   }
 

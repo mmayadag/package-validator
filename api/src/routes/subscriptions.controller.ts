@@ -34,16 +34,25 @@ export class SubscriptionsController {
   })
   @ApiCreatedResponse({ type: ScheduledReportDto })
   @ApiNotFoundResponse({ description: 'Repository does not exist or is not public', type: ErrorDto })
-  @ApiUnprocessableEntityResponse({ description: 'No package.json on the default branch, or it is not valid JSON', type: ErrorDto })
+  @ApiUnprocessableEntityResponse({
+    description: 'No package.json on the default branch, or it is not valid JSON',
+    type: ErrorDto,
+  })
   subscribe(@Body() { owner, repo, email, period }: ScheduleReportDto): Promise<ScheduledReport> {
     return this.subscriptions.subscribe({ owner, repo, email, period });
   }
 
   @Post(':token/confirm')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Confirm a subscription with the token from the email link', description: 'Activates the subscription and sends the first report. Idempotent.' })
+  @ApiOperation({
+    summary: 'Confirm a subscription with the token from the email link',
+    description: 'Activates the subscription and sends the first report. Idempotent.',
+  })
   @ApiOkResponse({ type: ConfirmedSubscriptionDto })
-  @ApiNotFoundResponse({ description: 'Unknown token, or the confirmation window of 24 hours has passed', type: ErrorDto })
+  @ApiNotFoundResponse({
+    description: 'Unknown token, or the confirmation window of 24 hours has passed',
+    type: ErrorDto,
+  })
   confirm(@Param() { token }: SubscriptionTokenDto): Promise<ConfirmedSubscription> {
     return this.subscriptions.confirm(token);
   }
