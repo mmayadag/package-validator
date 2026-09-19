@@ -84,6 +84,7 @@ make install     # npm ci for every workspace, then builds packages/contracts
 make lint        # prettier --check, oxlint, tsc for the API, svelte-check for the UI
 make test        # API unit + e2e tests, UI unit + component tests
 make smoke       # Playwright against the running stack (make up first)
+make smoke-stub  # Playwright against stubbed GitHub and npm; what CI runs
 
 npm run dev:api  # http://localhost:3288
 npm run dev:ui   # http://localhost:5173, /v1 proxied to the API

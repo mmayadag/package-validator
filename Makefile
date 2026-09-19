@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help up down logs ps install build test smoke lint format
+.PHONY: help up down logs ps install build test smoke smoke-stub lint format
 
 help: ## List available targets
 	@grep -E '^[a-z]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
@@ -28,6 +28,11 @@ test: ## Run api unit + e2e tests and ui tests
 	npm run test:e2e
 
 smoke: ## Browser smoke test against the running stack (make up first; needs TOKEN in .env)
+	npx playwright install chromium
+	npm run test:smoke
+
+smoke-stub: .env ## Browser smoke test against stubbed GitHub and npm, same as CI
+	docker compose -f docker-compose.yml -f docker-compose.stub.yml up -d --build --wait
 	npx playwright install chromium
 	npm run test:smoke
 

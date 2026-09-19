@@ -1,0 +1,12 @@
+services:
+  stub:
+    build:
+      context: e2e/stub
+
+  api:
+    environment:
+      GITHUB_ENDPOINT: http://stub:9999/graphql
+      NPM_REGISTRY: http://stub:9999
+    depends_on:
+      stub:
+        condition: service_healthy
