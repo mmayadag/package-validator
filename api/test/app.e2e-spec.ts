@@ -92,6 +92,7 @@ describe('API (e2e)', () => {
         '/v1/subscriptions',
         '/v1/subscriptions/{token}',
         '/v1/subscriptions/{token}/confirm',
+        '/v1/subscriptions/{token}/unsubscribe',
       ]);
       expect(body.components.schemas.ScheduledReportDto.properties.subscription).toBeDefined();
       expect(body.paths['/v1/subscriptions'].post.tags).toEqual(['subscriptions']);
@@ -275,7 +276,10 @@ describe('API (e2e)', () => {
         'dev@example.com',
         { owner: 'mmayadag', repo: 'confirm-me' },
         expect.anything(),
-        `https://pv.example.com/?unsubscribe=${token}`,
+        {
+          page: `https://pv.example.com/?unsubscribe=${token}`,
+          oneClick: `https://pv.example.com/v1/subscriptions/${token}/unsubscribe`,
+        },
       );
       expect(moduleRef.get(SubscriptionsRepository).findDue(Date.now())).toEqual([]);
 
@@ -337,6 +341,34 @@ describe('API (e2e)', () => {
 
     it('rejects a malformed token', () =>
       request(app.getHttpServer()).delete('/v1/subscriptions/not-a-token').expect(400));
+  });
+
+  describe('POST /v1/subscriptions/:token/unsubscribe', () => {
+    it('unsubscribes with the token from the List-Unsubscribe header, then 404s', async () => {
+      givenValidRepository();
+      email.sendConfirmation.mockResolvedValue(true);
+      const subscription = { owner: 'mmayadag', repo: 'one-click-unsubscribe', email: 'dev@example.com' };
+
+      await request(app.getHttpServer())
+        .post('/v1/subscriptions')
+        .send({ ...subscription, period: 6 })
+        .expect(201);
+      const token = confirmLinkToken();
+
+      await request(app.getHttpServer()).post(`/v1/subscriptions/${token}/unsubscribe`).expect(204);
+      expect(moduleRef.get(SubscriptionsRepository).find(subscription)).toBeNull();
+      await request(app.getHttpServer()).post(`/v1/subscriptions/${token}/unsubscribe`).expect(404);
+    });
+
+    it('returns 404 for an unknown token', () =>
+      request(app.getHttpServer())
+        .post(`/v1/subscriptions/${'a'.repeat(32)}/unsubscribe`)
+        .expect(404));
+
+    it('does not allow GET on the one-click unsubscribe path', () =>
+      request(app.getHttpServer())
+        .get(`/v1/subscriptions/${'a'.repeat(32)}/unsubscribe`)
+        .expect(404));
   });
 
   describe('rate limiting', () => {

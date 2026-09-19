@@ -27,6 +27,7 @@ Interactive documentation (Swagger UI) is served at [`/docs`](http://localhost:3
 | `POST`   | `/v1/subscriptions`                    | `{ owner, repo, email, period: 6 \| 12 \| 24 \| 168 }` | `201` report, `emailSent`, `subscription` | `400`, `404`, `422`, `502` GitHub unreachable                                    |
 | `POST`   | `/v1/subscriptions/:token/confirm`     |                                                        | `200` owner, repo, email, `subscription`  | `400` malformed token, `404` unknown or expired                                  |
 | `DELETE` | `/v1/subscriptions/:token`             |                                                        | `204`                                     | `400` malformed token, `404` unknown token                                       |
+| `POST`   | `/v1/subscriptions/:token/unsubscribe` |                                                        | `204`                                     | `400` malformed token, `404` unknown token                                       |
 
 A report looks like this:
 
@@ -54,6 +55,8 @@ A report is cached in memory for one hour per repository, so repeated requests a
 Every email links to the UI (`PUBLIC_URL/?confirm=<token>` and `PUBLIC_URL/?unsubscribe=<token>`), which asks for a click before calling the API, so mail scanners that follow links can neither confirm nor unsubscribe anyone. The token is never returned by the API.
 
 An hourly job (`@nestjs/schedule`) emails every active subscription whose period has elapsed, so a report arrives within an hour of being due. A repository that fails (deleted, made private, no `package.json`) is logged and retried on the next run without blocking the others, and overlapping runs are skipped. Nothing is sent while SendGrid is not configured.
+
+Every report email also carries `List-Unsubscribe` and `List-Unsubscribe-Post` headers pointing at `POST /v1/subscriptions/:token/unsubscribe`, so mail providers can unsubscribe an address with one click (RFC 8058) without visiting the UI.
 
 ### Security headers
 

@@ -48,9 +48,20 @@ export class EmailService {
   }
 
   /** Sends the report; returns whether it was sent. A delivery failure never fails the request. */
-  sendReport(to: string, ref: RepositoryRef, report: RenderedReport, unsubscribeUrl?: string): Promise<boolean> {
-    const message = unsubscribeUrl ? withUnsubscribeFooter(report, unsubscribeUrl) : report;
-    return this.send(to, `${ref.owner}/${ref.repo} ${this.settings.subject}`, message);
+  sendReport(
+    to: string,
+    ref: RepositoryRef,
+    report: RenderedReport,
+    links?: { page: string; oneClick: string },
+  ): Promise<boolean> {
+    const message = links ? withUnsubscribeFooter(report, links.page) : report;
+    const headers = links
+      ? {
+          'List-Unsubscribe': `<${links.oneClick}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        }
+      : undefined;
+    return this.send(to, `${ref.owner}/${ref.repo} ${this.settings.subject}`, message, headers);
   }
 
   /** Asks the address owner to confirm a new subscription. */
@@ -59,14 +70,19 @@ export class EmailService {
     return this.send(to, `Confirm your ${ref.owner}/${ref.repo} ${this.settings.subject.toLowerCase()}`, message);
   }
 
-  private async send(to: string, subject: string, { html, text }: RenderedReport): Promise<boolean> {
+  private async send(
+    to: string,
+    subject: string,
+    { html, text }: RenderedReport,
+    headers?: Record<string, string>,
+  ): Promise<boolean> {
     if (!this.enabled || !this.settings.from) {
       this.logger.warn('SENDGRID_API_KEY or EMAIL_FROM is not set; skipping the email');
       return false;
     }
 
     try {
-      await sgMail.send({ to, from: this.settings.from, subject, html, text });
+      await sgMail.send({ to, from: this.settings.from, subject, html, text, ...(headers ? { headers } : {}) });
       return true;
     } catch (error) {
       this.logger.error(`Could not send "${subject}": ${String(error)}`);
