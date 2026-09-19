@@ -99,6 +99,7 @@ npm run dev:ui   # http://localhost:5173, /v1 proxied to the API
 | `POST`   | `/v1/subscriptions`                    | `{ owner, repo, email, period: 6 \| 12 \| 24 \| 168 }` | `201` report and a pending subscription; a confirmation email is sent |
 | `POST`   | `/v1/subscriptions/:token/confirm`     |                                                        | Activates the subscription and sends the first report                 |
 | `DELETE` | `/v1/subscriptions/:token`             |                                                        | `204`, `404` unknown token                                            |
+| `POST`   | `/v1/subscriptions/:token/unsubscribe` |                                                        | One-click unsubscribe (RFC 8058); `204`, `404` unknown token          |
 
 Swagger UI is served at `/docs` (http://localhost:8080/docs with Docker) and the OpenAPI document at `/docs/openapi.json`. Response shapes, status codes and module layout are documented in [`api/README.md`](api/README.md).
 
