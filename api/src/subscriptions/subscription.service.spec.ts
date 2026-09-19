@@ -11,8 +11,6 @@ const report = {
   ...ref,
   outdated: {},
   generatedAt: '2026-09-16T00:00:00.000Z',
-  html: '<table></table>',
-  text: 'report',
 };
 const stored = (overrides: Partial<Subscription> = {}): Subscription => ({
   id: 7,
@@ -107,7 +105,7 @@ describe('SubscriptionService', () => {
       const result = await service.subscribe(request);
 
       expect(email.sendConfirmation).not.toHaveBeenCalled();
-      expect(email.sendReport).toHaveBeenCalledWith('dev@example.com', ref, report, {
+      expect(email.sendReport).toHaveBeenCalledWith('dev@example.com', ref, report.outdated, {
         page: 'https://pv.example.com/?unsubscribe=secret-token',
         oneClick: 'https://pv.example.com/v1/subscriptions/secret-token/unsubscribe',
       });
@@ -150,7 +148,7 @@ describe('SubscriptionService', () => {
       expect(email.sendReport).toHaveBeenCalledWith(
         'dev@example.com',
         ref,
-        report,
+        report.outdated,
         expect.objectContaining({ page: expect.stringContaining('unsubscribe='), oneClick: expect.any(String) }),
       );
       expect(subscriptions.markSent).toHaveBeenCalledWith(7);

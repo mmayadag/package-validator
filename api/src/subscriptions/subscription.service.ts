@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type {
   ConfirmedSubscription,
+  OutdatedDependencies,
   ReportPeriod,
   ScheduledReport,
   SubscriptionRequest,
@@ -9,7 +10,6 @@ import type {
 } from '@package-validator/contracts';
 import type { AppConfig } from '../config/configuration.js';
 import { EmailService } from '../email/email.service.js';
-import type { RenderedReport } from '../report/render-report.js';
 import { ReportService } from '../report/report.service.js';
 import { confirmUrl, oneClickUnsubscribeUrl, unsubscribeUrl } from './subscription-links.js';
 import { HOUR_MS, type Subscription, SubscriptionsRepository } from './subscriptions.repository.js';
@@ -59,7 +59,7 @@ export class SubscriptionService {
       return { ...report, emailSent, subscription: summarize(subscription) };
     }
 
-    const emailSent = await this.deliver(subscription, report);
+    const emailSent = await this.deliver(subscription, report.outdated);
     return { ...report, emailSent, subscription: summarize(this.subscriptions.findByToken(subscription.token)) };
   }
 
@@ -73,7 +73,8 @@ export class SubscriptionService {
     const ref = { owner: subscription.owner, repo: subscription.repo };
     if (subscription.lastSentAt === null) {
       try {
-        await this.deliver(subscription, await this.reports.buildReport(ref));
+        const report = await this.reports.buildReport(ref);
+        await this.deliver(subscription, report.outdated);
       } catch {
         // The repository may have gone away since; the scheduler retries on its next run.
       }
@@ -88,9 +89,9 @@ export class SubscriptionService {
     }
   }
 
-  private async deliver(subscription: Subscription, report: RenderedReport): Promise<boolean> {
+  private async deliver(subscription: Subscription, outdated: OutdatedDependencies): Promise<boolean> {
     const ref = { owner: subscription.owner, repo: subscription.repo };
-    const sent = await this.email.sendReport(subscription.email, ref, report, {
+    const sent = await this.email.sendReport(subscription.email, ref, outdated, {
       page: unsubscribeUrl(this.publicUrl, subscription.token),
       oneClick: oneClickUnsubscribeUrl(this.publicUrl, subscription.token),
     });

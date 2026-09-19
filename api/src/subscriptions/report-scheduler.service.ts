@@ -61,7 +61,7 @@ export class ReportSchedulerService {
         const ref = { owner: subscription.owner, repo: subscription.repo };
         try {
           const report = await this.reports.buildReport(ref);
-          const delivered = await this.email.sendReport(subscription.email, ref, report, {
+          const delivered = await this.email.sendReport(subscription.email, ref, report.outdated, {
             page: unsubscribeUrl(this.publicUrl, subscription.token),
             oneClick: oneClickUnsubscribeUrl(this.publicUrl, subscription.token),
           });

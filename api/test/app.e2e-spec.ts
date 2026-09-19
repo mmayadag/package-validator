@@ -174,7 +174,6 @@ describe('API (e2e)', () => {
       const { body } = await request(app.getHttpServer()).get('/v1/repositories/mmayadag/app/report').expect(200);
 
       expect(body).toMatchObject({ owner: 'mmayadag', repo: 'app', outdated: { dependencies: [{ name: 'express' }] } });
-      expect(body.html).toContain('<td>express</td>');
     });
 
     it('returns 404 for an unknown repository', async () => {

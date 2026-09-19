@@ -14,8 +14,6 @@ const report = (overrides: Partial<ScheduledReport> = {}): ScheduledReport => ({
     devDependencies: [{ name: 'vitest', current: '5.0.0', latest: '5.0.1', change: 'patch' }],
   },
   generatedAt: '2026-09-16T10:00:00.000Z',
-  html: '',
-  text: '',
   emailSent: true,
   subscription: { status: 'pending', periodHours: 24, nextReportAt: null },
   ...overrides,

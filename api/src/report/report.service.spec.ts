@@ -38,7 +38,6 @@ describe('ReportService', () => {
 
     expect(dependencyChecker.findOutdated).toHaveBeenCalledWith({ dependencies: { express: '^4.0.0' } });
     expect(report).toMatchObject({ ...ref, outdated: { dependencies: [{ name: 'express' }] } });
-    expect(report.html).toContain('<td>express</td>');
   });
 
   it('rejects an unknown repository before checking dependencies', async () => {

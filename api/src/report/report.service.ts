@@ -2,7 +2,6 @@ import { Injectable, NotFoundException, UnprocessableEntityException } from '@ne
 import type { RepoReport, RepositoryRef } from '@package-validator/contracts';
 import { DependencyCheckerService, type PackageManifest } from '../dependencies/dependency-checker.service.js';
 import { GithubService } from '../github/github.service.js';
-import { renderReport } from './render-report.js';
 
 export const REPORT_CACHE_TTL_MS = 60 * 60 * 1000;
 /** Upper bound on cached reports; the oldest entry is evicted beyond it. */
@@ -56,7 +55,7 @@ export class ReportService {
     }
 
     const outdated = await this.dependencyChecker.findOutdated(parseManifest(result.packageJson));
-    return { ...ref, outdated, generatedAt: new Date().toISOString(), ...renderReport(ref, outdated) };
+    return { ...ref, outdated, generatedAt: new Date().toISOString() };
   }
 }
 

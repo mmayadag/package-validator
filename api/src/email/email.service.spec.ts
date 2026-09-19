@@ -8,7 +8,7 @@ vi.mock('@sendgrid/mail', () => ({ default: { setApiKey: vi.fn(), send: vi.fn() 
 const configWith = (email: AppConfig['email']) => ({ get: () => email }) as unknown as ConfigService<AppConfig, true>;
 const configured = { apiKey: 'SG.test', from: 'reports@example.com', subject: 'Dependency report' };
 const ref = { owner: 'mmayadag', repo: 'package-validator' };
-const report = { html: '<table></table>', text: 'report' };
+const outdated = { dependencies: [{ name: 'express', current: '^4.0.0', latest: '^5.1.0', change: 'major' as const }] };
 const link = 'https://pv.example.com/?unsubscribe=abc';
 const links = { page: link, oneClick: 'https://pv.example.com/v1/subscriptions/abc/unsubscribe' };
 
@@ -23,7 +23,7 @@ describe('EmailService', () => {
     const service = new EmailService(configWith({ subject: 'Dependency report' }));
 
     expect(service.enabled).toBe(false);
-    await expect(service.sendReport('dev@example.com', ref, report)).resolves.toBe(false);
+    await expect(service.sendReport('dev@example.com', ref, outdated)).resolves.toBe(false);
     await expect(service.sendConfirmation('dev@example.com', ref, 24, link)).resolves.toBe(false);
     expect(sgMail.send).not.toHaveBeenCalled();
   });
@@ -31,7 +31,7 @@ describe('EmailService', () => {
   it('sends the report with an unsubscribe link and List-Unsubscribe headers', async () => {
     const service = new EmailService(configWith(configured));
 
-    await expect(service.sendReport('dev@example.com', ref, report, links)).resolves.toBe(true);
+    await expect(service.sendReport('dev@example.com', ref, outdated, links)).resolves.toBe(true);
 
     expect(sgMail.setApiKey).toHaveBeenCalledWith('SG.test');
     expect(sentMessage()).toMatchObject({
@@ -39,6 +39,8 @@ describe('EmailService', () => {
       from: 'reports@example.com',
       subject: 'mmayadag/package-validator Dependency report',
     });
+    expect(sentMessage().html).toContain('<table>');
+    expect(sentMessage().html).toContain('express');
     expect(sentMessage().html).toContain(`<a href="${link}">Unsubscribe</a>`);
     expect(sentMessage().text).toContain(`Unsubscribe: ${link}`);
     expect(sentMessage().headers).toEqual({
@@ -50,7 +52,7 @@ describe('EmailService', () => {
   it('sends the report without List-Unsubscribe headers when no links are given', async () => {
     const service = new EmailService(configWith(configured));
 
-    await expect(service.sendReport('dev@example.com', ref, report)).resolves.toBe(true);
+    await expect(service.sendReport('dev@example.com', ref, outdated)).resolves.toBe(true);
 
     expect(sentMessage().headers).toBeUndefined();
   });
@@ -72,6 +74,6 @@ describe('EmailService', () => {
     vi.mocked(sgMail.send).mockRejectedValue(new Error('SendGrid is down'));
     const service = new EmailService(configWith(configured));
 
-    await expect(service.sendReport('dev@example.com', ref, report)).resolves.toBe(false);
+    await expect(service.sendReport('dev@example.com', ref, outdated)).resolves.toBe(false);
   });
 });

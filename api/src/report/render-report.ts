@@ -1,6 +1,12 @@
-import type { OutdatedDependencies, OutdatedDependency, RepoReport, RepositoryRef } from '@package-validator/contracts';
+import type { OutdatedDependencies, OutdatedDependency, RepositoryRef } from '@package-validator/contracts';
 
-export type RenderedReport = Pick<RepoReport, 'html' | 'text'>;
+/** HTML and text renderings of a report; produced only when an email is sent. */
+export interface RenderedReport {
+  /** HTML tables, values escaped. */
+  html: string;
+  /** Plain-text version of the report. */
+  text: string;
+}
 
 const HTML_ESCAPES: Record<string, string> = {
   '&': '&amp;',

@@ -9,7 +9,7 @@ NestJS service that reads a public repository's `package.json` through the GitHu
 | `config`        | Loads and validates environment variables into a typed `AppConfig`                                                                                                                                                                                      |
 | `github`        | GraphQL client: repository lookup and `HEAD:package.json` contents                                                                                                                                                                                      |
 | `dependencies`  | Reads the `latest` dist-tag of every declared package from the npm registry (8 requests in flight, 5 s timeout) and groups what is outdated by section                                                                                                  |
-| `report`        | `ReportService` builds the report (GitHub → registry → render) and keeps it for an hour; the renderer escapes every value                                                                                                                               |
+| `report`        | `ReportService` builds the report (GitHub → registry) and keeps it for an hour; `render-report` renders it as HTML and text for email, escaping every value                                                                                             |
 | `email`         | Confirmation requests and reports through SendGrid; a no-op when it is not configured                                                                                                                                                                   |
 | `subscriptions` | `SubscriptionService` (request, confirm, deliver, remove), the hourly `ReportSchedulerService` and the SQLite store (`node:sqlite`, no native dependency; schema changes are ordered migrations tracked in `PRAGMA user_version`, one transaction each) |
 | `routes`        | HTTP layer only: the `/v1` controllers (`RepositoriesController`, `SubscriptionsController`) and the DTOs                                                                                                                                               |
@@ -38,9 +38,7 @@ A report looks like this:
   "outdated": {
     "dependencies": [{ "name": "express", "current": "^4.17.1", "latest": "^5.1.0", "change": "major" }]
   },
-  "generatedAt": "2026-09-15T13:00:00.000Z",
-  "html": "<table>…</table>",
-  "text": "Outdated dependencies of mmayadag/bicycle-in-izmir …"
+  "generatedAt": "2026-09-15T13:00:00.000Z"
 }
 ```
 

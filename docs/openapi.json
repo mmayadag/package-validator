@@ -569,17 +569,9 @@
             "type": "string",
             "description": "When the npm registry was queried; reports are reused for up to an hour",
             "format": "date-time"
-          },
-          "html": {
-            "type": "string",
-            "description": "HTML tables, values escaped"
-          },
-          "text": {
-            "type": "string",
-            "description": "Plain-text version of the report"
           }
         },
-        "required": ["owner", "repo", "outdated", "generatedAt", "html", "text"]
+        "required": ["owner", "repo", "outdated", "generatedAt"]
       },
       "ScheduleReportDto": {
         "type": "object",
@@ -656,14 +648,6 @@
             "description": "When the npm registry was queried; reports are reused for up to an hour",
             "format": "date-time"
           },
-          "html": {
-            "type": "string",
-            "description": "HTML tables, values escaped"
-          },
-          "text": {
-            "type": "string",
-            "description": "Plain-text version of the report"
-          },
           "emailSent": {
             "type": "boolean",
             "description": "Whether a confirmation request or the report itself was emailed"
@@ -672,7 +656,7 @@
             "$ref": "#/components/schemas/SubscriptionSummaryDto"
           }
         },
-        "required": ["owner", "repo", "outdated", "generatedAt", "html", "text", "emailSent", "subscription"]
+        "required": ["owner", "repo", "outdated", "generatedAt", "emailSent", "subscription"]
       },
       "ConfirmedSubscriptionDto": {
         "type": "object",

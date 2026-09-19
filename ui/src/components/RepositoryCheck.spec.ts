@@ -16,8 +16,6 @@ const report: ScheduledReport = {
   repo: 'app',
   outdated: { dependencies: [{ name: 'express', current: '^4.0.0', latest: '^5.1.0', change: 'major' }] },
   generatedAt: '2026-09-16T10:00:00.000Z',
-  html: '',
-  text: '',
   emailSent: true,
   subscription: { status: 'pending', periodHours: 24, nextReportAt: null },
 };

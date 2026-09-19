@@ -21,7 +21,12 @@ const subscription = (overrides: Partial<Subscription>): Subscription => ({
 
 describe('ReportSchedulerService', () => {
   const now = 1_000_000;
-  const report = { owner: 'mmayadag', repo: 'package-validator', outdated: {}, html: '', text: '' };
+  const report = {
+    owner: 'mmayadag',
+    repo: 'package-validator',
+    outdated: {},
+    generatedAt: '2026-09-16T00:00:00.000Z',
+  };
   const reports = { buildReport: vi.fn() };
   const subscriptions = { findDue: vi.fn(), markSent: vi.fn(), deleteExpiredPending: vi.fn() };
   const email = { enabled: true, sendReport: vi.fn() };
@@ -60,10 +65,15 @@ describe('ReportSchedulerService', () => {
     await expect(scheduler.sendDueReports(now)).resolves.toEqual({ due: 2, sent: 2, failed: 0, expired: 0 });
 
     expect(subscriptions.findDue).toHaveBeenCalledWith(now);
-    expect(email.sendReport).toHaveBeenCalledWith('dev@example.com', { owner: 'mmayadag', repo: 'other' }, report, {
-      page: 'https://pv.example.com/?unsubscribe=token-2',
-      oneClick: 'https://pv.example.com/v1/subscriptions/token-2/unsubscribe',
-    });
+    expect(email.sendReport).toHaveBeenCalledWith(
+      'dev@example.com',
+      { owner: 'mmayadag', repo: 'other' },
+      report.outdated,
+      {
+        page: 'https://pv.example.com/?unsubscribe=token-2',
+        oneClick: 'https://pv.example.com/v1/subscriptions/token-2/unsubscribe',
+      },
+    );
     expect(subscriptions.markSent).toHaveBeenCalledWith(1, now);
     expect(subscriptions.markSent).toHaveBeenCalledWith(2, now);
   });

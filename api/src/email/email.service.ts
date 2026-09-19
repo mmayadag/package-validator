@@ -2,8 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import sgMail from '@sendgrid/mail';
 import type { AppConfig } from '../config/configuration.js';
-import { formatPeriod, type ReportPeriod, type RepositoryRef } from '@package-validator/contracts';
-import { escapeHtml, type RenderedReport } from '../report/render-report.js';
+import {
+  formatPeriod,
+  type OutdatedDependencies,
+  type ReportPeriod,
+  type RepositoryRef,
+} from '@package-validator/contracts';
+import { escapeHtml, renderReport, type RenderedReport } from '../report/render-report.js';
 
 export function withUnsubscribeFooter(report: RenderedReport, url: string): RenderedReport {
   return {
@@ -51,9 +56,10 @@ export class EmailService {
   sendReport(
     to: string,
     ref: RepositoryRef,
-    report: RenderedReport,
+    outdated: OutdatedDependencies,
     links?: { page: string; oneClick: string },
   ): Promise<boolean> {
+    const report = renderReport(ref, outdated);
     const message = links ? withUnsubscribeFooter(report, links.page) : report;
     const headers = links
       ? {
