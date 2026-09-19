@@ -21,7 +21,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@package-validator/contracts": "0.2.0"
+    "@package-validator/contracts": "*"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
