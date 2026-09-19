@@ -1,14 +1,14 @@
 import { createRequire } from 'node:module';
 import type { INestApplication } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { DocumentBuilder, type OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 
 export const DOCS_PATH = 'docs';
 export const OPENAPI_JSON_PATH = `${DOCS_PATH}/openapi.json`;
 
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 
-/** Serves Swagger UI at /docs and the OpenAPI document at /docs/openapi.json. */
-export function setupOpenApi(app: INestApplication): void {
+/** Builds the OpenAPI 3 document from the DTO decorators. Shared by the server and the generator script. */
+export function buildOpenApiDocument(app: INestApplication): OpenAPIObject {
   const config = new DocumentBuilder()
     .setTitle('Package Validator API')
     .setDescription(
@@ -24,7 +24,12 @@ export function setupOpenApi(app: INestApplication): void {
     .addTag('health', 'Liveness probe')
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
+  return SwaggerModule.createDocument(app, config);
+}
+
+/** Serves Swagger UI at /docs and the OpenAPI document at /docs/openapi.json. */
+export function setupOpenApi(app: INestApplication): void {
+  const document = buildOpenApiDocument(app);
   SwaggerModule.setup(DOCS_PATH, app, document, {
     jsonDocumentUrl: OPENAPI_JSON_PATH,
     customSiteTitle: 'Package Validator API',

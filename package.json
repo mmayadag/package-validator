@@ -20,6 +20,7 @@
   "scripts": {
     "build:contracts": "npm run build --workspace packages/contracts",
     "build": "npm run build --workspace packages/contracts --workspace api --workspace ui",
+    "openapi": "npm run openapi --workspace api",
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

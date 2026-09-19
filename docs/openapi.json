@@ -1,0 +1,704 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Liveness probe",
+        "tags": ["health"]
+      }
+    },
+    "/v1/repositories/{owner}/{repo}": {
+      "get": {
+        "operationId": "RepositoriesController_validity_v1",
+        "parameters": [
+          {
+            "name": "owner",
+            "required": true,
+            "in": "path",
+            "description": "GitHub user or organisation",
+            "schema": {
+              "maxLength": 39,
+              "example": "mmayadag",
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "required": true,
+            "in": "path",
+            "description": "Repository name",
+            "schema": {
+              "maxLength": 100,
+              "example": "bicycle-in-izmir",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidityResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Check that a repository exists and is public",
+        "tags": ["repositories"]
+      }
+    },
+    "/v1/repositories/{owner}/{repo}/report": {
+      "get": {
+        "operationId": "RepositoriesController_report_v1",
+        "parameters": [
+          {
+            "name": "owner",
+            "required": true,
+            "in": "path",
+            "description": "GitHub user or organisation",
+            "schema": {
+              "maxLength": 39,
+              "example": "mmayadag",
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "required": true,
+            "in": "path",
+            "description": "Repository name",
+            "schema": {
+              "maxLength": 100,
+              "example": "bicycle-in-izmir",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepoReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository does not exist or is not public",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No package.json on the default branch, or it is not valid JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Report outdated dependencies of package.json on the default branch",
+        "tags": ["repositories"]
+      }
+    },
+    "/v1/subscriptions": {
+      "post": {
+        "description": "A new address receives a confirmation email and stays pending until it confirms; an already confirmed address gets the report right away. One subscription per address and repository; posting again only changes the period.",
+        "operationId": "SubscriptionsController_subscribe_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduledReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository does not exist or is not public",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No package.json on the default branch, or it is not valid JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Build the report and subscribe an address to it",
+        "tags": ["subscriptions"]
+      }
+    },
+    "/v1/subscriptions/{token}/confirm": {
+      "post": {
+        "description": "Activates the subscription and sends the first report. Idempotent.",
+        "operationId": "SubscriptionsController_confirm_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "description": "Token from the confirmation or unsubscribe link",
+            "schema": {
+              "pattern": "^[A-Za-z0-9_-]{32}$",
+              "example": "k3jd0Qw9_xL2v-8ZpB1cT6yN4rM7aH5e",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmedSubscriptionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown token, or the confirmation window of 24 hours has passed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Confirm a subscription with the token from the email link",
+        "tags": ["subscriptions"]
+      }
+    },
+    "/v1/subscriptions/{token}": {
+      "delete": {
+        "operationId": "SubscriptionsController_unsubscribe_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "description": "Token from the confirmation or unsubscribe link",
+            "schema": {
+              "pattern": "^[A-Za-z0-9_-]{32}$",
+              "example": "k3jd0Qw9_xL2v-8ZpB1cT6yN4rM7aH5e",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Subscription removed"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown token or already removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Unsubscribe with the token from the email link",
+        "tags": ["subscriptions"]
+      }
+    },
+    "/v1/subscriptions/{token}/unsubscribe": {
+      "post": {
+        "operationId": "SubscriptionsController_oneClickUnsubscribe_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "description": "Token from the confirmation or unsubscribe link",
+            "schema": {
+              "pattern": "^[A-Za-z0-9_-]{32}$",
+              "example": "k3jd0Qw9_xL2v-8ZpB1cT6yN4rM7aH5e",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Subscription removed"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown token or already removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "One-click unsubscribe used by mail providers (RFC 8058)",
+        "tags": ["subscriptions"]
+      }
+    }
+  },
+  "info": {
+    "title": "Package Validator API",
+    "description": "Reports outdated package.json dependencies of a public GitHub repository and emails the report on a schedule. Requests are rate limited per client IP; a rejected request gets 429 with Retry-After.",
+    "version": "0.2.0",
+    "contact": {
+      "name": "Murat Mayadağ",
+      "url": "https://github.com/mmayadag",
+      "email": ""
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/mmayadag/package-validator/blob/main/LICENSE"
+    }
+  },
+  "tags": [
+    {
+      "name": "repositories",
+      "description": "Validate a repository and build its dependency report"
+    },
+    {
+      "name": "subscriptions",
+      "description": "Email delivery every 6, 12, 24 hours or a week"
+    },
+    {
+      "name": "health",
+      "description": "Liveness probe"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "HealthDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          }
+        },
+        "required": ["status"]
+      },
+      "ErrorDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 404
+          },
+          "message": {
+            "description": "One message, or one per failed validation rule",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "error": {
+            "type": "string",
+            "example": "Not Found"
+          }
+        },
+        "required": ["statusCode", "message"]
+      },
+      "ValidityResponseDto": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "description": "Whether the repository exists and is visible to the API"
+          }
+        },
+        "required": ["valid"]
+      },
+      "OutdatedDependencyDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "express"
+          },
+          "current": {
+            "type": "string",
+            "description": "Range declared in package.json",
+            "example": "^4.17.1"
+          },
+          "latest": {
+            "type": "string",
+            "description": "Range for the latest release on npm",
+            "example": "^5.1.0"
+          },
+          "change": {
+            "type": "string",
+            "description": "Semver distance between the two; a minor bump below 1.0.0 counts as major",
+            "enum": ["major", "minor", "patch", "unknown"],
+            "example": "major"
+          }
+        },
+        "required": ["name", "current", "latest", "change"]
+      },
+      "OutdatedDependenciesDto": {
+        "type": "object",
+        "properties": {
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OutdatedDependencyDto"
+            }
+          },
+          "devDependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OutdatedDependencyDto"
+            }
+          },
+          "peerDependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OutdatedDependencyDto"
+            }
+          },
+          "optionalDependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OutdatedDependencyDto"
+            }
+          }
+        }
+      },
+      "RepoReportDto": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "example": "mmayadag"
+          },
+          "repo": {
+            "type": "string",
+            "example": "bicycle-in-izmir"
+          },
+          "outdated": {
+            "description": "Only sections with outdated packages are present",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OutdatedDependenciesDto"
+              }
+            ]
+          },
+          "generatedAt": {
+            "type": "string",
+            "description": "When the npm registry was queried; reports are reused for up to an hour",
+            "format": "date-time"
+          },
+          "html": {
+            "type": "string",
+            "description": "HTML tables, values escaped"
+          },
+          "text": {
+            "type": "string",
+            "description": "Plain-text version of the report"
+          }
+        },
+        "required": ["owner", "repo", "outdated", "generatedAt", "html", "text"]
+      },
+      "ScheduleReportDto": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "GitHub user or organisation",
+            "example": "mmayadag",
+            "maxLength": 39
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name",
+            "example": "bicycle-in-izmir",
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "description": "Address that receives the report after confirming",
+            "example": "dev@example.com",
+            "format": "email"
+          },
+          "period": {
+            "type": "number",
+            "description": "Hours between reports: 6, 12, 24 hours or a week (168)",
+            "enum": [6, 12, 24, 168],
+            "example": 24
+          }
+        },
+        "required": ["owner", "repo", "email", "period"]
+      },
+      "SubscriptionSummaryDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "pending until the address owner confirms by email",
+            "enum": ["pending", "active"]
+          },
+          "periodHours": {
+            "type": "number",
+            "enum": [6, 12, 24, 168]
+          },
+          "nextReportAt": {
+            "type": "string",
+            "description": "When the next report is due; null until the first one was delivered",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": ["status", "periodHours", "nextReportAt"]
+      },
+      "ScheduledReportDto": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "example": "mmayadag"
+          },
+          "repo": {
+            "type": "string",
+            "example": "bicycle-in-izmir"
+          },
+          "outdated": {
+            "description": "Only sections with outdated packages are present",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OutdatedDependenciesDto"
+              }
+            ]
+          },
+          "generatedAt": {
+            "type": "string",
+            "description": "When the npm registry was queried; reports are reused for up to an hour",
+            "format": "date-time"
+          },
+          "html": {
+            "type": "string",
+            "description": "HTML tables, values escaped"
+          },
+          "text": {
+            "type": "string",
+            "description": "Plain-text version of the report"
+          },
+          "emailSent": {
+            "type": "boolean",
+            "description": "Whether a confirmation request or the report itself was emailed"
+          },
+          "subscription": {
+            "$ref": "#/components/schemas/SubscriptionSummaryDto"
+          }
+        },
+        "required": ["owner", "repo", "outdated", "generatedAt", "html", "text", "emailSent", "subscription"]
+      },
+      "ConfirmedSubscriptionDto": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "example": "mmayadag"
+          },
+          "repo": {
+            "type": "string",
+            "example": "bicycle-in-izmir"
+          },
+          "email": {
+            "type": "string",
+            "example": "dev@example.com"
+          },
+          "subscription": {
+            "$ref": "#/components/schemas/SubscriptionSummaryDto"
+          }
+        },
+        "required": ["owner", "repo", "email", "subscription"]
+      }
+    }
+  },
+  "externalDocs": {
+    "description": "Source code and documentation",
+    "url": "https://github.com/mmayadag/package-validator"
+  }
+}
