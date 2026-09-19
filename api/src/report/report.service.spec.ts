@@ -7,7 +7,7 @@ import { REPORT_CACHE_TTL_MS, ReportService } from './report.service.js';
 const ref = { owner: 'mmayadag', repo: 'package-validator' };
 
 describe('ReportService', () => {
-  const github = { repositoryExists: vi.fn(), getPackageJson: vi.fn() };
+  const github = { fetchPackageJson: vi.fn() };
   const dependencyChecker = { findOutdated: vi.fn() };
   let service: ReportService;
 
@@ -24,8 +24,7 @@ describe('ReportService', () => {
   });
 
   const givenRepositoryWithPackageJson = (raw = '{}') => {
-    github.repositoryExists.mockResolvedValue(true);
-    github.getPackageJson.mockResolvedValue(raw);
+    github.fetchPackageJson.mockResolvedValue({ exists: true, packageJson: raw });
     dependencyChecker.findOutdated.mockResolvedValue({});
   };
 
@@ -42,23 +41,21 @@ describe('ReportService', () => {
     expect(report.html).toContain('<td>express</td>');
   });
 
-  it('rejects an unknown repository before reading any file', async () => {
-    github.repositoryExists.mockResolvedValue(false);
+  it('rejects an unknown repository before checking dependencies', async () => {
+    github.fetchPackageJson.mockResolvedValue({ exists: false });
 
     await expect(service.buildReport(ref)).rejects.toBeInstanceOf(NotFoundException);
-    expect(github.getPackageJson).not.toHaveBeenCalled();
+    expect(dependencyChecker.findOutdated).not.toHaveBeenCalled();
   });
 
   it('rejects a repository without package.json', async () => {
-    github.repositoryExists.mockResolvedValue(true);
-    github.getPackageJson.mockResolvedValue(null);
+    github.fetchPackageJson.mockResolvedValue({ exists: true, packageJson: null });
 
     await expect(service.buildReport(ref)).rejects.toBeInstanceOf(UnprocessableEntityException);
   });
 
   it.each(['not json', '[]', 'null'])('rejects package.json content %j', async (raw) => {
-    github.repositoryExists.mockResolvedValue(true);
-    github.getPackageJson.mockResolvedValue(raw);
+    givenRepositoryWithPackageJson(raw);
 
     await expect(service.buildReport(ref)).rejects.toThrow('package.json is not valid JSON');
   });
@@ -75,7 +72,7 @@ describe('ReportService', () => {
       const second = await service.buildReport({ owner: 'MMayadag', repo: 'Package-Validator' });
 
       expect(second).toBe(first);
-      expect(github.getPackageJson).toHaveBeenCalledTimes(1);
+      expect(github.fetchPackageJson).toHaveBeenCalledTimes(1);
       expect(dependencyChecker.findOutdated).toHaveBeenCalledTimes(1);
       expect(first.generatedAt).toBe(new Date(Date.now() - REPORT_CACHE_TTL_MS + 1).toISOString());
     });
@@ -87,7 +84,7 @@ describe('ReportService', () => {
       vi.advanceTimersByTime(REPORT_CACHE_TTL_MS);
       await service.buildReport(ref);
 
-      expect(github.getPackageJson).toHaveBeenCalledTimes(2);
+      expect(github.fetchPackageJson).toHaveBeenCalledTimes(2);
     });
 
     it('rebuilds after the cache is cleared', async () => {
@@ -97,11 +94,11 @@ describe('ReportService', () => {
       service.clearCache();
       await service.buildReport(ref);
 
-      expect(github.getPackageJson).toHaveBeenCalledTimes(2);
+      expect(github.fetchPackageJson).toHaveBeenCalledTimes(2);
     });
 
     it('does not cache failures', async () => {
-      github.repositoryExists.mockResolvedValueOnce(false);
+      github.fetchPackageJson.mockResolvedValueOnce({ exists: false });
       await expect(service.buildReport(ref)).rejects.toBeInstanceOf(NotFoundException);
       givenRepositoryWithPackageJson();
 

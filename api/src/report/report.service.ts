@@ -47,16 +47,15 @@ export class ReportService {
   private async fetchReport(ref: RepositoryRef): Promise<RepoReport> {
     const { owner, repo } = ref;
 
-    if (!(await this.github.repositoryExists(ref))) {
+    const result = await this.github.fetchPackageJson(ref);
+    if (!result.exists) {
       throw new NotFoundException(`Repository ${owner}/${repo} does not exist or is not public`);
     }
-
-    const raw = await this.github.getPackageJson(ref);
-    if (raw === null) {
+    if (result.packageJson === null) {
       throw new UnprocessableEntityException(`${owner}/${repo} has no package.json on its default branch`);
     }
 
-    const outdated = await this.dependencyChecker.findOutdated(parseManifest(raw));
+    const outdated = await this.dependencyChecker.findOutdated(parseManifest(result.packageJson));
     return { ...ref, outdated, generatedAt: new Date().toISOString(), ...renderReport(ref, outdated) };
   }
 }
