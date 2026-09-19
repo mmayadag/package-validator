@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { BadGatewayException, type INestApplication } from '@nestjs/common';
 import { CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -8,8 +10,11 @@ import { RateLimitGuard } from '../src/common/rate-limit/rate-limit.guard.js';
 import { DependencyCheckerService } from '../src/dependencies/dependency-checker.service.js';
 import { EmailService } from '../src/email/email.service.js';
 import { GithubService } from '../src/github/github.service.js';
+import { buildOpenApiDocument } from '../src/openapi.js';
 import { ReportService } from '../src/report/report.service.js';
 import { SubscriptionsRepository } from '../src/subscriptions/subscriptions.repository.js';
+
+const openApiSnapshotPath = fileURLToPath(new URL('../../docs/openapi.json', import.meta.url));
 
 describe('API (e2e)', () => {
   const github = { repositoryExists: vi.fn(), fetchPackageJson: vi.fn() };
@@ -104,6 +109,15 @@ describe('API (e2e)', () => {
 
       expect(headers['content-type']).toContain('text/html');
       expect(headers['content-security-policy']).toContain("script-src 'self' 'unsafe-inline'");
+    });
+
+    it('matches the committed docs/openapi.json', () => {
+      const live = buildOpenApiDocument(app);
+      const committed = JSON.parse(readFileSync(openApiSnapshotPath, 'utf8'));
+
+      // info.version comes from api/package.json on both sides; called out separately for a clearer failure.
+      expect(live.info.version, 'run `npm run openapi` to regenerate docs/openapi.json').toBe(committed.info.version);
+      expect(live, 'docs/openapi.json is stale; run `npm run openapi` and commit the result').toEqual(committed);
     });
   });
 

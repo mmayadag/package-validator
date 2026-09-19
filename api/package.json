@@ -14,6 +14,7 @@
   },
   "scripts": {
     "build": "nest build",
+    "openapi": "nest build && node --experimental-strip-types scripts/write-openapi.ts",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
@@ -53,6 +54,7 @@
     "@types/supertest": "^7.2.1",
     "@vitest/coverage-v8": "^5.0.0",
     "oxlint": "^1.83.0",
+    "prettier": "^3.9.7",
     "supertest": "^7.2.2",
     "typescript": "~6.0.3",
     "unplugin-swc": "^1.6.0",
