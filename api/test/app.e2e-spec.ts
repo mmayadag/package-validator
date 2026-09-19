@@ -1,4 +1,4 @@
-import type { INestApplication } from '@nestjs/common';
+import { BadGatewayException, type INestApplication } from '@nestjs/common';
 import { CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { Test, type TestingModule } from '@nestjs/testing';
 import request from 'supertest';
@@ -12,7 +12,7 @@ import { ReportService } from '../src/report/report.service.js';
 import { SubscriptionsRepository } from '../src/subscriptions/subscriptions.repository.js';
 
 describe('API (e2e)', () => {
-  const github = { repositoryExists: vi.fn(), getPackageJson: vi.fn() };
+  const github = { repositoryExists: vi.fn(), fetchPackageJson: vi.fn() };
   const dependencyChecker = { findOutdated: vi.fn() };
   const email = { sendReport: vi.fn(), sendConfirmation: vi.fn() };
   const logged = vi.fn();
@@ -53,7 +53,7 @@ describe('API (e2e)', () => {
 
   const givenValidRepository = () => {
     github.repositoryExists.mockResolvedValue(true);
-    github.getPackageJson.mockResolvedValue('{}');
+    github.fetchPackageJson.mockResolvedValue({ exists: true, packageJson: '{}' });
     dependencyChecker.findOutdated.mockResolvedValue({});
   };
 
@@ -151,8 +151,7 @@ describe('API (e2e)', () => {
 
   describe('GET /v1/repositories/:owner/:repo/report', () => {
     it('returns the report', async () => {
-      github.repositoryExists.mockResolvedValue(true);
-      github.getPackageJson.mockResolvedValue('{"dependencies":{"express":"^4.0.0"}}');
+      github.fetchPackageJson.mockResolvedValue({ exists: true, packageJson: '{"dependencies":{"express":"^4.0.0"}}' });
       dependencyChecker.findOutdated.mockResolvedValue({
         dependencies: [{ name: 'express', current: '^4.0.0', latest: '^5.1.0', change: 'major' }],
       });
@@ -164,16 +163,21 @@ describe('API (e2e)', () => {
     });
 
     it('returns 404 for an unknown repository', async () => {
-      github.repositoryExists.mockResolvedValue(false);
+      github.fetchPackageJson.mockResolvedValue({ exists: false });
 
       await request(app.getHttpServer()).get('/v1/repositories/mmayadag/missing/report').expect(404);
     });
 
     it('returns 422 when there is no package.json', async () => {
-      github.repositoryExists.mockResolvedValue(true);
-      github.getPackageJson.mockResolvedValue(null);
+      github.fetchPackageJson.mockResolvedValue({ exists: true, packageJson: null });
 
       await request(app.getHttpServer()).get('/v1/repositories/mmayadag/go-app/report').expect(422);
+    });
+
+    it('returns 502 when GitHub cannot be reached', async () => {
+      github.fetchPackageJson.mockRejectedValue(new BadGatewayException('GitHub could not be reached'));
+
+      await request(app.getHttpServer()).get('/v1/repositories/mmayadag/unreachable/report').expect(502);
     });
   });
 
@@ -337,7 +341,7 @@ describe('API (e2e)', () => {
 
   describe('rate limiting', () => {
     it('answers 429 with Retry-After once a client exceeds the strict limit', async () => {
-      github.repositoryExists.mockResolvedValue(false);
+      github.fetchPackageJson.mockResolvedValue({ exists: false });
       const statuses: number[] = [];
       let limited: request.Response | undefined;
 
@@ -353,7 +357,7 @@ describe('API (e2e)', () => {
     });
 
     it('separates clients forwarded by the proxy', async () => {
-      github.repositoryExists.mockResolvedValue(false);
+      github.fetchPackageJson.mockResolvedValue({ exists: false });
 
       await request(app.getHttpServer())
         .get('/v1/repositories/mmayadag/flood/report')

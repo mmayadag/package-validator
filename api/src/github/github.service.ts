@@ -1,16 +1,27 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { RepositoryRef } from '@package-validator/contracts';
-import { GraphQLClient } from 'graphql-request';
+import { ClientError, GraphQLClient } from 'graphql-request';
 import type { AppConfig } from '../config/configuration.js';
-import { PACKAGE_JSON_QUERY, REPOSITORY_QUERY } from './github.queries.js';
+import { REPOSITORY_QUERY, REPOSITORY_WITH_PACKAGE_JSON_QUERY } from './github.queries.js';
 
 interface RepositoryResponse {
   repository: { name: string } | null;
 }
 
-interface PackageJsonResponse {
-  repository: { object: { text: string | null } | null } | null;
+interface RepositoryWithPackageJsonResponse {
+  repository: { name: string; object: { text: string | null } | null } | null;
+}
+
+/** `exists: false` means the repository does not exist or is not accessible. */
+export type PackageJsonResult = { exists: false } | { exists: true; packageJson: string | null };
+
+/** GitHub answers an unknown or inaccessible repository with this error type. */
+function isNotFoundError(error: unknown): boolean {
+  return (
+    error instanceof ClientError &&
+    (error.response.errors ?? []).some((graphqlError) => (graphqlError as { type?: unknown }).type === 'NOT_FOUND')
+  );
 }
 
 @Injectable()
@@ -27,21 +38,34 @@ export class GithubService {
 
   /**
    * True when the token can see the repository. GitHub answers an unknown or
-   * inaccessible repository with a NOT_FOUND error, so any failure means "no".
+   * inaccessible repository with a NOT_FOUND error, so that (and a null
+   * repository) mean "no".
    */
-  async repositoryExists({ owner, repo }: RepositoryRef): Promise<boolean> {
-    try {
-      const data = await this.client.request<RepositoryResponse>(REPOSITORY_QUERY, { owner, repo });
-      return data.repository !== null;
-    } catch (error) {
-      this.logger.warn(`Repository lookup failed for ${owner}/${repo}: ${String(error)}`);
-      return false;
-    }
+  async repositoryExists(ref: RepositoryRef): Promise<boolean> {
+    const data = await this.request<RepositoryResponse>(REPOSITORY_QUERY, ref);
+    return data !== null && data.repository !== null;
   }
 
-  /** Raw package.json text from the default branch, or null when there is none. */
-  async getPackageJson({ owner, repo }: RepositoryRef): Promise<string | null> {
-    const data = await this.client.request<PackageJsonResponse>(PACKAGE_JSON_QUERY, { owner, repo });
-    return data.repository?.object?.text ?? null;
+  /** Repository existence and its package.json in a single request. */
+  async fetchPackageJson(ref: RepositoryRef): Promise<PackageJsonResult> {
+    const data = await this.request<RepositoryWithPackageJsonResponse>(REPOSITORY_WITH_PACKAGE_JSON_QUERY, ref);
+    if (data === null || data.repository === null) return { exists: false };
+    return { exists: true, packageJson: data.repository.object?.text ?? null };
+  }
+
+  /**
+   * Runs a query, treating a GitHub NOT_FOUND error as "no such data" (null).
+   * Any other failure — a network error, a bad token, a rate limit, a 5xx or
+   * a malformed response — is not an answer about the repository, so it is
+   * logged and rethrown as a 502.
+   */
+  private async request<T>(query: string, { owner, repo }: RepositoryRef): Promise<T | null> {
+    try {
+      return await this.client.request<T>(query, { owner, repo });
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      this.logger.error(`GitHub request failed for ${owner}/${repo}: ${String(error)}`);
+      throw new BadGatewayException('GitHub could not be reached');
+    }
   }
 }
