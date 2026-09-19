@@ -10,6 +10,7 @@ const configured = { apiKey: 'SG.test', from: 'reports@example.com', subject: 'D
 const ref = { owner: 'mmayadag', repo: 'package-validator' };
 const report = { html: '<table></table>', text: 'report' };
 const link = 'https://pv.example.com/?unsubscribe=abc';
+const links = { page: link, oneClick: 'https://pv.example.com/v1/subscriptions/abc/unsubscribe' };
 
 const sentMessage = () => vi.mocked(sgMail.send).mock.calls[0][0] as unknown as { [key: string]: string };
 
@@ -27,10 +28,10 @@ describe('EmailService', () => {
     expect(sgMail.send).not.toHaveBeenCalled();
   });
 
-  it('sends the report with an unsubscribe link', async () => {
+  it('sends the report with an unsubscribe link and List-Unsubscribe headers', async () => {
     const service = new EmailService(configWith(configured));
 
-    await expect(service.sendReport('dev@example.com', ref, report, link)).resolves.toBe(true);
+    await expect(service.sendReport('dev@example.com', ref, report, links)).resolves.toBe(true);
 
     expect(sgMail.setApiKey).toHaveBeenCalledWith('SG.test');
     expect(sentMessage()).toMatchObject({
@@ -40,9 +41,21 @@ describe('EmailService', () => {
     });
     expect(sentMessage().html).toContain(`<a href="${link}">Unsubscribe</a>`);
     expect(sentMessage().text).toContain(`Unsubscribe: ${link}`);
+    expect(sentMessage().headers).toEqual({
+      'List-Unsubscribe': `<${links.oneClick}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    });
   });
 
-  it('sends a confirmation request with the period and the link', async () => {
+  it('sends the report without List-Unsubscribe headers when no links are given', async () => {
+    const service = new EmailService(configWith(configured));
+
+    await expect(service.sendReport('dev@example.com', ref, report)).resolves.toBe(true);
+
+    expect(sentMessage().headers).toBeUndefined();
+  });
+
+  it('sends a confirmation request with the period and the link, and no List-Unsubscribe headers', async () => {
     const service = new EmailService(configWith(configured));
     const confirm = 'https://pv.example.com/?confirm=abc';
 
@@ -52,6 +65,7 @@ describe('EmailService', () => {
     expect(sentMessage().html).toContain('every 12 hours');
     expect(sentMessage().html).toContain(`<a href="${confirm}">Confirm the subscription</a>`);
     expect(sentMessage().text).toContain(`Confirm the subscription: ${confirm}`);
+    expect(sentMessage().headers).toBeUndefined();
   });
 
   it('returns false instead of throwing when delivery fails', async () => {

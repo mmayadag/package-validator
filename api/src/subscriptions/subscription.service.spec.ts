@@ -83,12 +83,10 @@ describe('SubscriptionService', () => {
       const result = await service.subscribe(request);
 
       expect(email.sendConfirmation).not.toHaveBeenCalled();
-      expect(email.sendReport).toHaveBeenCalledWith(
-        'dev@example.com',
-        ref,
-        report,
-        'https://pv.example.com/?unsubscribe=secret-token',
-      );
+      expect(email.sendReport).toHaveBeenCalledWith('dev@example.com', ref, report, {
+        page: 'https://pv.example.com/?unsubscribe=secret-token',
+        oneClick: 'https://pv.example.com/v1/subscriptions/secret-token/unsubscribe',
+      });
       expect(subscriptions.markSent).toHaveBeenCalledWith(7);
       expect(result.subscription).toEqual({
         status: 'active',
@@ -129,7 +127,7 @@ describe('SubscriptionService', () => {
         'dev@example.com',
         ref,
         report,
-        expect.stringContaining('unsubscribe='),
+        expect.objectContaining({ page: expect.stringContaining('unsubscribe='), oneClick: expect.any(String) }),
       );
       expect(subscriptions.markSent).toHaveBeenCalledWith(7);
       expect(result).toEqual({
