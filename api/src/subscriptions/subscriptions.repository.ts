@@ -23,6 +23,8 @@ export interface Subscription {
   /** Set once the address owner clicked the confirmation link. */
   confirmedAt: number | null;
   lastSentAt: number | null;
+  /** Set each time a confirmation email is sent; throttles resends while pending. */
+  confirmationSentAt: number | null;
 }
 
 export type SubscriptionKey = Pick<Subscription, 'owner' | 'repo' | 'email'>;
@@ -38,6 +40,7 @@ export class SubscriptionsRepository implements OnModuleDestroy {
   private readonly findDueStatement: StatementSync;
   private readonly confirmStatement: StatementSync;
   private readonly markSentStatement: StatementSync;
+  private readonly markConfirmationSentStatement: StatementSync;
   private readonly deleteByTokenStatement: StatementSync;
   private readonly deleteExpiredPendingStatement: StatementSync;
 
@@ -70,10 +73,15 @@ export class SubscriptionsRepository implements OnModuleDestroy {
         AND (last_sent_at IS NULL OR last_sent_at + period_hours * ${HOUR_MS} <= :now)
       ORDER BY id
     `);
-    this.confirmStatement = this.db.prepare(
-      'UPDATE subscriptions SET confirmed_at = COALESCE(confirmed_at, :now) WHERE token = :token RETURNING *',
-    );
+    this.confirmStatement = this.db.prepare(`
+      UPDATE subscriptions SET confirmed_at = COALESCE(confirmed_at, :now)
+      WHERE token = :token AND (confirmed_at IS NOT NULL OR created_at >= :notBefore)
+      RETURNING *
+    `);
     this.markSentStatement = this.db.prepare('UPDATE subscriptions SET last_sent_at = :at WHERE id = :id');
+    this.markConfirmationSentStatement = this.db.prepare(
+      'UPDATE subscriptions SET confirmation_sent_at = :at WHERE id = :id',
+    );
     this.deleteByTokenStatement = this.db.prepare('DELETE FROM subscriptions WHERE token = :token');
     this.deleteExpiredPendingStatement = this.db.prepare(
       'DELETE FROM subscriptions WHERE confirmed_at IS NULL AND created_at < :before',
@@ -105,14 +113,22 @@ export class SubscriptionsRepository implements OnModuleDestroy {
     return this.findDueStatement.all({ now }).map(toSubscription);
   }
 
-  /** Marks the subscription confirmed; a second confirmation keeps the original time. */
+  /**
+   * Marks the subscription confirmed; a second confirmation keeps the original time.
+   * A pending subscription whose token has outlived the pending TTL no longer matches.
+   */
   confirm(token: string, now = Date.now()): Subscription | null {
-    const row = this.confirmStatement.get({ token, now });
+    const row = this.confirmStatement.get({ token, now, notBefore: now - PENDING_TTL_MS });
     return row ? toSubscription(row) : null;
   }
 
   markSent(id: number, at = Date.now()): void {
     this.markSentStatement.run({ id, at });
+  }
+
+  /** Records when a confirmation email was last sent, to throttle resends. */
+  markConfirmationSent(id: number, at = Date.now()): void {
+    this.markConfirmationSentStatement.run({ id, at });
   }
 
   /** Returns whether a subscription with this token existed. */
@@ -141,5 +157,6 @@ function toSubscription(row: Record<string, unknown>): Subscription {
     createdAt: Number(row.created_at),
     confirmedAt: row.confirmed_at === null ? null : Number(row.confirmed_at),
     lastSentAt: row.last_sent_at === null ? null : Number(row.last_sent_at),
+    confirmationSentAt: row.confirmation_sent_at === null ? null : Number(row.confirmation_sent_at),
   };
 }

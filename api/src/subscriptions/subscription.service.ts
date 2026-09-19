@@ -14,6 +14,9 @@ import { ReportService } from '../report/report.service.js';
 import { confirmUrl, oneClickUnsubscribeUrl, unsubscribeUrl } from './subscription-links.js';
 import { HOUR_MS, type Subscription, SubscriptionsRepository } from './subscriptions.repository.js';
 
+/** A pending address is sent at most one confirmation email within this window. */
+export const CONFIRMATION_RESEND_MS = 10 * 60_000;
+
 /** Lifecycle of an email subscription: request, confirmation, delivery and removal. */
 @Injectable()
 export class SubscriptionService {
@@ -32,18 +35,27 @@ export class SubscriptionService {
    * Validates the repository and stores the subscription. A new address gets a
    * confirmation request; an already confirmed one gets the report right away.
    */
-  async subscribe({ owner, repo, email, period }: SubscriptionRequest): Promise<ScheduledReport> {
+  async subscribe({ owner, repo, email, period }: SubscriptionRequest, now = Date.now()): Promise<ScheduledReport> {
     const ref = { owner, repo };
     const report = await this.reports.buildReport(ref);
     const subscription = this.subscriptions.upsert({ ...ref, email, periodHours: period });
 
     if (subscription.confirmedAt === null) {
+      const throttled =
+        subscription.confirmationSentAt !== null && now - subscription.confirmationSentAt < CONFIRMATION_RESEND_MS;
+      if (throttled) {
+        return { ...report, emailSent: false, subscription: summarize(subscription) };
+      }
+
       const emailSent = await this.email.sendConfirmation(
         email,
         ref,
         subscription.periodHours,
         confirmUrl(this.publicUrl, subscription.token),
       );
+      if (emailSent) {
+        this.subscriptions.markConfirmationSent(subscription.id, now);
+      }
       return { ...report, emailSent, subscription: summarize(subscription) };
     }
 

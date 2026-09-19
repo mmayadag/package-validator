@@ -50,7 +50,7 @@ A report is cached in memory for one hour per repository, so repeated requests a
 
 ### Subscriptions
 
-`POST /v1/subscriptions` returns the report immediately and stores one subscription per email and repository (case-insensitive); posting again only changes the period. A new address is **pending**: it receives a confirmation email, not the report, and the response carries `subscription: { status: "pending", periodHours, nextReportAt: null }`. Confirming through `POST /v1/subscriptions/:token/confirm` activates it and sends the first report; unconfirmed requests are deleted after 24 hours. An already confirmed address gets the report straight away and `status: "active"`.
+`POST /v1/subscriptions` returns the report immediately and stores one subscription per email and repository (case-insensitive); posting again only changes the period. A new address is **pending**: it receives a confirmation email, not the report, and the response carries `subscription: { status: "pending", periodHours, nextReportAt: null }`. Confirming through `POST /v1/subscriptions/:token/confirm` activates it and sends the first report; unconfirmed requests are deleted after 24 hours. An already confirmed address gets the report straight away and `status: "active"`. A pending address is sent a new confirmation email at most once every 10 minutes per email and repository, and its confirmation link stops working once the 24-hour window has passed.
 
 Every email links to the UI (`PUBLIC_URL/?confirm=<token>` and `PUBLIC_URL/?unsubscribe=<token>`), which asks for a click before calling the API, so mail scanners that follow links can neither confirm nor unsubscribe anyone. The token is never returned by the API.
 
