@@ -12,7 +12,11 @@ export class ScheduleReportDto extends RepositoryRefDto implements SubscriptionR
   @IsEmail()
   email!: string;
 
-  @ApiProperty({ description: 'Hours between reports', enum: REPORT_PERIODS, example: 24 })
+  @ApiProperty({
+    description: 'Hours between reports: 6, 12, 24 hours or a week (168)',
+    enum: REPORT_PERIODS,
+    example: 24,
+  })
   @IsInt()
   @IsIn(REPORT_PERIODS)
   period!: ReportPeriod;

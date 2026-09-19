@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ApiError, type ConfirmedSubscription, confirmSubscription } from '../lib/api';
+  import { ApiError, type ConfirmedSubscription, confirmSubscription, formatPeriod } from '../lib/api';
 
   let { token }: { token: string } = $props();
 
@@ -23,8 +23,9 @@
   {#if status === 'done' && result}
     <h2 id="confirm-title">Subscription confirmed</h2>
     <p>
-      The report for <strong>{result.owner}/{result.repo}</strong> is on its way to {result.email} and will follow every {result
-        .subscription.periodHours} hours. Every email has an unsubscribe link.
+      The report for <strong>{result.owner}/{result.repo}</strong> is on its way to {result.email} and will follow every {formatPeriod(
+        result.subscription.periodHours,
+      )}. Every email has an unsubscribe link.
     </p>
   {:else if status === 'gone'}
     <h2 id="confirm-title">This link is no longer valid</h2>

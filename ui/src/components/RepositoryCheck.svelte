@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    formatPeriod,
     REPORT_PERIODS,
     type ReportPeriod,
     type ScheduledReport,
@@ -106,7 +107,7 @@
       <label for="period">Every</label>
       <select id="period" bind:value={period}>
         {#each REPORT_PERIODS as hours (hours)}
-          <option value={hours}>{hours} hours</option>
+          <option value={hours}>{formatPeriod(hours)}</option>
         {/each}
       </select>
     </div>

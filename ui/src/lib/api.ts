@@ -1,5 +1,6 @@
 import {
   type ConfirmedSubscription,
+  formatPeriod,
   REPORT_PERIODS,
   type RepositoryRef,
   type ScheduledReport,
@@ -7,7 +8,7 @@ import {
   type ValidityResponse,
 } from '@package-validator/contracts';
 
-export { REPORT_PERIODS };
+export { formatPeriod, REPORT_PERIODS };
 export type {
   ChangeKind,
   ConfirmedSubscription,

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ScheduledReport } from '../lib/api';
+  import { formatPeriod, type ScheduledReport } from '../lib/api';
 
   let { report }: { report: ScheduledReport } = $props();
 
@@ -20,10 +20,12 @@
         : `${total} outdated ${total === 1 ? 'dependency' : 'dependencies'}${majors > 0 ? `, ${majors} with a major version jump` : ''}.`}
       {#if report.subscription.status === 'active'}
         {report.emailSent
-          ? `The report was emailed to you and will follow every ${report.subscription.periodHours} hours.`
+          ? `The report was emailed to you and will follow every ${formatPeriod(report.subscription.periodHours)}.`
           : 'Email delivery is not configured on this server.'}
       {:else if report.emailSent}
-        Check your inbox and confirm the subscription to receive this report every {report.subscription.periodHours} hours.
+        Check your inbox and confirm the subscription to receive this report every {formatPeriod(
+          report.subscription.periodHours,
+        )}.
       {:else}
         Email delivery is not configured on this server, so the subscription cannot be confirmed.
       {/if}

@@ -69,6 +69,15 @@ describe('RepositoryCheck', () => {
     expect(screen.getByLabelText('Repository')).toHaveAttribute('aria-invalid', 'true');
   });
 
+  it('offers every report period, with the week option labelled distinctly', async () => {
+    render(RepositoryCheck);
+
+    const options = screen.getAllByRole('option') as HTMLOptionElement[];
+
+    expect(options).toHaveLength(4);
+    expect(options.map((option) => option.textContent?.trim())).toEqual(['6 hours', '12 hours', '24 hours', '1 week']);
+  });
+
   it('enables the button only with a valid repository and an email, then shows the report', async () => {
     isValidRepository.mockResolvedValue(true);
     scheduleReport.mockResolvedValue(report);
