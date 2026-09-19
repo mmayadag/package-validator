@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.3.0](https://github.com/mmayadag/package-validator/compare/v0.2.0...v0.3.0) (2026-09-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **#67:** RepoReport and ScheduledReport no longer have html and text fields.
+
+### Features
+
+* **#65:** add List-Unsubscribe headers and a one-click unsubscribe route ([9a5cbba](https://github.com/mmayadag/package-validator/commit/9a5cbbae2368874c08f84c88faac42062c26c386)), refs [#65](https://github.com/mmayadag/package-validator/issues/65)
+* **#68:** offer a weekly report period ([e81d1bb](https://github.com/mmayadag/package-validator/commit/e81d1bb9b5cf70d6ec54964f12628fb9103bf4a6)), refs [#68](https://github.com/mmayadag/package-validator/issues/68)
+
+
+### Bug Fixes
+
+* **#61:** answer 502 when GitHub is unreachable and read package.json in one query ([cba28fb](https://github.com/mmayadag/package-validator/commit/cba28fb02b21581c225b56ee935c50b4cbad9cd5)), refs [#61](https://github.com/mmayadag/package-validator/issues/61)
+* **#62:** throttle confirmation emails and enforce the 24-hour window ([6d443b3](https://github.com/mmayadag/package-validator/commit/6d443b332b6186691b5115162d2b4e3a8b9575d2)), refs [#62](https://github.com/mmayadag/package-validator/issues/62)
+* **#73:** depend on the contracts workspace by any version ([28593cb](https://github.com/mmayadag/package-validator/commit/28593cbe345f3ba8f745cd80db3c511052d102d9)), refs [#73](https://github.com/mmayadag/package-validator/issues/73)
+
+
+### Refactoring
+
+* **#67:** return report data only and render for email alone ([6153851](https://github.com/mmayadag/package-validator/commit/61538511b8b94e21100c4b393104c1c28ebfa433)), refs [#67](https://github.com/mmayadag/package-validator/issues/67)
+
 ## [0.2.0](https://github.com/mmayadag/package-validator/compare/v0.1.0...v0.2.0) (2026-09-16)
 
 
