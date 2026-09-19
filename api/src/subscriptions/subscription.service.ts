@@ -11,7 +11,7 @@ import type { AppConfig } from '../config/configuration.js';
 import { EmailService } from '../email/email.service.js';
 import type { RenderedReport } from '../report/render-report.js';
 import { ReportService } from '../report/report.service.js';
-import { confirmUrl, unsubscribeUrl } from './subscription-links.js';
+import { confirmUrl, oneClickUnsubscribeUrl, unsubscribeUrl } from './subscription-links.js';
 import { HOUR_MS, type Subscription, SubscriptionsRepository } from './subscriptions.repository.js';
 
 /** Lifecycle of an email subscription: request, confirmation, delivery and removal. */
@@ -78,12 +78,10 @@ export class SubscriptionService {
 
   private async deliver(subscription: Subscription, report: RenderedReport): Promise<boolean> {
     const ref = { owner: subscription.owner, repo: subscription.repo };
-    const sent = await this.email.sendReport(
-      subscription.email,
-      ref,
-      report,
-      unsubscribeUrl(this.publicUrl, subscription.token),
-    );
+    const sent = await this.email.sendReport(subscription.email, ref, report, {
+      page: unsubscribeUrl(this.publicUrl, subscription.token),
+      oneClick: oneClickUnsubscribeUrl(this.publicUrl, subscription.token),
+    });
     if (sent) {
       this.subscriptions.markSent(subscription.id);
     }

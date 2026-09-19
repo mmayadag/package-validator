@@ -65,4 +65,13 @@ export class SubscriptionsController {
   unsubscribe(@Param() { token }: SubscriptionTokenDto): void {
     this.subscriptions.unsubscribe(token);
   }
+
+  @Post(':token/unsubscribe')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'One-click unsubscribe used by mail providers (RFC 8058)' })
+  @ApiNoContentResponse({ description: 'Subscription removed' })
+  @ApiNotFoundResponse({ description: 'Unknown token or already removed', type: ErrorDto })
+  oneClickUnsubscribe(@Param() { token }: SubscriptionTokenDto): void {
+    this.subscriptions.unsubscribe(token);
+  }
 }

@@ -4,7 +4,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import type { AppConfig } from '../config/configuration.js';
 import { EmailService } from '../email/email.service.js';
 import { ReportService } from '../report/report.service.js';
-import { unsubscribeUrl } from './subscription-links.js';
+import { oneClickUnsubscribeUrl, unsubscribeUrl } from './subscription-links.js';
 import { SubscriptionsRepository } from './subscriptions.repository.js';
 
 export interface DeliveryRun {
@@ -61,12 +61,10 @@ export class ReportSchedulerService {
         const ref = { owner: subscription.owner, repo: subscription.repo };
         try {
           const report = await this.reports.buildReport(ref);
-          const delivered = await this.email.sendReport(
-            subscription.email,
-            ref,
-            report,
-            unsubscribeUrl(this.publicUrl, subscription.token),
-          );
+          const delivered = await this.email.sendReport(subscription.email, ref, report, {
+            page: unsubscribeUrl(this.publicUrl, subscription.token),
+            oneClick: oneClickUnsubscribeUrl(this.publicUrl, subscription.token),
+          });
           if (delivered) {
             this.subscriptions.markSent(subscription.id, now);
             sent += 1;
