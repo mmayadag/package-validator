@@ -25,6 +25,7 @@ describe('migrations', () => {
     expect(migrate(db)).toEqual({ from: 0, to: CURRENT_VERSION });
     expect(version(db)).toBe(CURRENT_VERSION);
     expect(columns(db)).toContain('confirmed_at');
+    expect(columns(db)).toContain('confirmation_sent_at');
 
     expect(migrate(db)).toEqual({ from: CURRENT_VERSION, to: CURRENT_VERSION });
   });
@@ -49,6 +50,16 @@ describe('migrations', () => {
     db.exec('ALTER TABLE subscriptions ADD COLUMN confirmed_at INTEGER');
 
     expect(migrate(db)).toEqual({ from: 2, to: CURRENT_VERSION });
+    expect(version(db)).toBe(CURRENT_VERSION);
+  });
+
+  it('stamp a database created with the confirmation throttle column before versioning existed', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec(LEGACY_TABLE);
+    db.exec('ALTER TABLE subscriptions ADD COLUMN confirmed_at INTEGER');
+    db.exec('ALTER TABLE subscriptions ADD COLUMN confirmation_sent_at INTEGER');
+
+    expect(migrate(db)).toEqual({ from: 3, to: CURRENT_VERSION });
     expect(version(db)).toBe(CURRENT_VERSION);
   });
 

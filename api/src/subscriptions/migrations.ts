@@ -34,6 +34,11 @@ export const MIGRATIONS: readonly Migration[] = [
     description: 'confirmation state',
     sql: 'ALTER TABLE subscriptions ADD COLUMN confirmed_at INTEGER',
   },
+  {
+    version: 3,
+    description: 'confirmation email throttle',
+    sql: 'ALTER TABLE subscriptions ADD COLUMN confirmation_sent_at INTEGER',
+  },
 ];
 
 export const CURRENT_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
@@ -87,5 +92,6 @@ function detectVersion(db: DatabaseSync): number {
     (db.prepare('PRAGMA table_info(subscriptions)').all() as Array<{ name: string }>).map(({ name }) => name),
   );
   if (columns.size === 0) return 0;
+  if (columns.has('confirmation_sent_at')) return 3;
   return columns.has('confirmed_at') ? 2 : 1;
 }

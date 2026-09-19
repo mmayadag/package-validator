@@ -20,7 +20,13 @@ describe('SubscriptionsRepository', () => {
   it('creates a pending subscription with an unguessable token', () => {
     const subscription = repository.upsert(input, 1_000);
 
-    expect(subscription).toMatchObject({ ...input, createdAt: 1_000, confirmedAt: null, lastSentAt: null });
+    expect(subscription).toMatchObject({
+      ...input,
+      createdAt: 1_000,
+      confirmedAt: null,
+      lastSentAt: null,
+      confirmationSentAt: null,
+    });
     expect(subscription.token).toMatch(/^[A-Za-z0-9_-]{32}$/);
   });
 
@@ -55,6 +61,21 @@ describe('SubscriptionsRepository', () => {
     repository.markSent(id, 5_000);
 
     expect(repository.find(input)?.lastSentAt).toBe(5_000);
+  });
+
+  it('records when a confirmation email was sent', () => {
+    const { id } = repository.upsert(input);
+
+    repository.markConfirmationSent(id, 5_000);
+
+    expect(repository.find(input)?.confirmationSentAt).toBe(5_000);
+  });
+
+  it('returns null confirming a pending token that has outlived the 24-hour TTL', () => {
+    const { token } = repository.upsert(input, 0);
+
+    expect(repository.confirm(token, PENDING_TTL_MS + HOUR)).toBeNull();
+    expect(repository.find(input)?.confirmedAt).toBeNull();
   });
 
   it('finds only confirmed subscriptions that were never delivered or whose period has elapsed', () => {

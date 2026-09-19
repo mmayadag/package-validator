@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { EmailService } from '../email/email.service.js';
 import { ReportService } from '../report/report.service.js';
-import { SubscriptionService } from './subscription.service.js';
+import { CONFIRMATION_RESEND_MS, SubscriptionService } from './subscription.service.js';
 import { type Subscription, SubscriptionsRepository } from './subscriptions.repository.js';
 
 const ref = { owner: 'mmayadag', repo: 'package-validator' };
@@ -23,6 +23,7 @@ const stored = (overrides: Partial<Subscription> = {}): Subscription => ({
   createdAt: 0,
   confirmedAt: null,
   lastSentAt: null,
+  confirmationSentAt: null,
   ...overrides,
 });
 
@@ -32,6 +33,7 @@ describe('SubscriptionService', () => {
   const subscriptions = {
     upsert: vi.fn(),
     markSent: vi.fn(),
+    markConfirmationSent: vi.fn(),
     deleteByToken: vi.fn(),
     confirm: vi.fn(),
     findByToken: vi.fn(),
@@ -71,8 +73,30 @@ describe('SubscriptionService', () => {
       );
       expect(email.sendReport).not.toHaveBeenCalled();
       expect(subscriptions.markSent).not.toHaveBeenCalled();
+      expect(subscriptions.markConfirmationSent).toHaveBeenCalledWith(7, expect.any(Number));
       expect(result).toMatchObject({ ...report, emailSent: true });
       expect(result.subscription).toEqual({ status: 'pending', periodHours: 12, nextReportAt: null });
+    });
+
+    it('sends one confirmation within 10 minutes and another once the window has passed', async () => {
+      email.sendConfirmation.mockResolvedValue(true);
+      subscriptions.upsert.mockReturnValue(stored({ confirmationSentAt: null }));
+
+      const first = await service.subscribe(request, 0);
+      expect(email.sendConfirmation).toHaveBeenCalledTimes(1);
+      expect(subscriptions.markConfirmationSent).toHaveBeenCalledWith(7, 0);
+      expect(first.emailSent).toBe(true);
+
+      subscriptions.upsert.mockReturnValue(stored({ confirmationSentAt: 0 }));
+      const second = await service.subscribe(request, CONFIRMATION_RESEND_MS - 1);
+      expect(email.sendConfirmation).toHaveBeenCalledTimes(1);
+      expect(second.emailSent).toBe(false);
+
+      subscriptions.upsert.mockReturnValue(stored({ confirmationSentAt: 0 }));
+      const third = await service.subscribe(request, CONFIRMATION_RESEND_MS);
+      expect(email.sendConfirmation).toHaveBeenCalledTimes(2);
+      expect(subscriptions.markConfirmationSent).toHaveBeenCalledWith(7, CONFIRMATION_RESEND_MS);
+      expect(third.emailSent).toBe(true);
     });
 
     it('sends the report right away to an already confirmed address', async () => {

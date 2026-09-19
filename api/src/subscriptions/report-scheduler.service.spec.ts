@@ -15,6 +15,7 @@ const subscription = (overrides: Partial<Subscription>): Subscription => ({
   createdAt: 0,
   confirmedAt: 0,
   lastSentAt: null,
+  confirmationSentAt: null,
   ...overrides,
 });
 
