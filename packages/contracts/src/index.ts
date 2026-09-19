@@ -43,10 +43,6 @@ export interface RepoReport extends RepositoryRef {
   outdated: OutdatedDependencies;
   /** ISO timestamp of the registry lookup; a report is reused for up to an hour. */
   generatedAt: string;
-  /** HTML tables, values escaped. */
-  html: string;
-  /** Plain-text version of the report. */
-  text: string;
 }
 
 export interface ValidityResponse {

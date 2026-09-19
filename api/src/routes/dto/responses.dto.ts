@@ -70,12 +70,6 @@ export class RepoReportDto implements RepoReport {
     format: 'date-time',
   })
   generatedAt!: string;
-
-  @ApiProperty({ description: 'HTML tables, values escaped' })
-  html!: string;
-
-  @ApiProperty({ description: 'Plain-text version of the report' })
-  text!: string;
 }
 
 export class SubscriptionSummaryDto implements SubscriptionSummary {
