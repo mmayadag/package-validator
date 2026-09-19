@@ -54,9 +54,14 @@ export interface ValidityResponse {
 }
 
 /** Hours between two scheduled reports. */
-export const REPORT_PERIODS = [6, 12, 24] as const;
+export const REPORT_PERIODS = [6, 12, 24, 168] as const;
 
 export type ReportPeriod = (typeof REPORT_PERIODS)[number];
+
+/** Human-readable label for a report period, e.g. `'6 hours'` or `'1 week'`. */
+export function formatPeriod(hours: ReportPeriod): string {
+  return hours === 168 ? '1 week' : `${hours} hours`;
+}
 
 export const SUBSCRIPTION_STATUSES = ['pending', 'active'] as const;
 

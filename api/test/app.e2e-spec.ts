@@ -202,6 +202,18 @@ describe('API (e2e)', () => {
       );
     });
 
+    it('accepts a weekly period', async () => {
+      givenValidRepository();
+      email.sendConfirmation.mockResolvedValue(true);
+
+      const response = await request(app.getHttpServer())
+        .post('/v1/subscriptions')
+        .send({ ...body, repo: 'weekly', period: 168 })
+        .expect(201);
+
+      expect(response.body.subscription).toMatchObject({ periodHours: 168 });
+    });
+
     it('keeps one subscription per email and repository', async () => {
       givenValidRepository();
       email.sendConfirmation.mockResolvedValue(false);
@@ -224,6 +236,7 @@ describe('API (e2e)', () => {
     it.each([
       ['an invalid email', { email: 'nope' }],
       ['an unsupported period', { period: 7 }],
+      ['a period between a day and a week', { period: 48 }],
       ['an owner GitHub would not accept', { owner: '-bad' }],
       ['unknown body fields', { admin: true }],
     ])('rejects %s', async (_, override) => {

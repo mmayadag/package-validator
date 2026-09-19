@@ -19,14 +19,14 @@ NestJS service that reads a public repository's `package.json` through the GitHu
 
 Interactive documentation (Swagger UI) is served at [`/docs`](http://localhost:3288/docs) and the OpenAPI 3 document at `/docs/openapi.json`; both are generated from the DTO decorators at startup and can be switched off with `DOCS_ENABLED=false`. In Docker they are reachable through the UI container at http://localhost:8080/docs.
 
-| Method   | Path                                   | Body                                            | Success                                   | Errors                                                 |
-| -------- | -------------------------------------- | ----------------------------------------------- | ----------------------------------------- | ------------------------------------------------------ |
-| `GET`    | `/health`                              |                                                 | `200 { status: "ok" }`                    |                                                        |
-| `GET`    | `/v1/repositories/:owner/:repo`        |                                                 | `200 { valid }`                           | `400` invalid name                                     |
-| `GET`    | `/v1/repositories/:owner/:repo/report` |                                                 | `200` report                              | `404` unknown repo, `422` no or invalid `package.json` |
-| `POST`   | `/v1/subscriptions`                    | `{ owner, repo, email, period: 6 \| 12 \| 24 }` | `201` report, `emailSent`, `subscription` | `400`, `404`, `422`                                    |
-| `POST`   | `/v1/subscriptions/:token/confirm`     |                                                 | `200` owner, repo, email, `subscription`  | `400` malformed token, `404` unknown or expired        |
-| `DELETE` | `/v1/subscriptions/:token`             |                                                 | `204`                                     | `400` malformed token, `404` unknown token             |
+| Method   | Path                                   | Body                                                   | Success                                   | Errors                                                 |
+| -------- | -------------------------------------- | ------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------ |
+| `GET`    | `/health`                              |                                                        | `200 { status: "ok" }`                    |                                                        |
+| `GET`    | `/v1/repositories/:owner/:repo`        |                                                        | `200 { valid }`                           | `400` invalid name                                     |
+| `GET`    | `/v1/repositories/:owner/:repo/report` |                                                        | `200` report                              | `404` unknown repo, `422` no or invalid `package.json` |
+| `POST`   | `/v1/subscriptions`                    | `{ owner, repo, email, period: 6 \| 12 \| 24 \| 168 }` | `201` report, `emailSent`, `subscription` | `400`, `404`, `422`                                    |
+| `POST`   | `/v1/subscriptions/:token/confirm`     |                                                        | `200` owner, repo, email, `subscription`  | `400` malformed token, `404` unknown or expired        |
+| `DELETE` | `/v1/subscriptions/:token`             |                                                        | `204`                                     | `400` malformed token, `404` unknown token             |
 
 A report looks like this:
 

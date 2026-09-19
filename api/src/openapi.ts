@@ -20,7 +20,7 @@ export function setupOpenApi(app: INestApplication): void {
     .setLicense('MIT', 'https://github.com/mmayadag/package-validator/blob/main/LICENSE')
     .setExternalDoc('Source code and documentation', 'https://github.com/mmayadag/package-validator')
     .addTag('repositories', 'Validate a repository and build its dependency report')
-    .addTag('subscriptions', 'Email delivery on a 6, 12 or 24 hour schedule')
+    .addTag('subscriptions', 'Email delivery every 6, 12, 24 hours or a week')
     .addTag('health', 'Liveness probe')
     .build();
 

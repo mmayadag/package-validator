@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import sgMail from '@sendgrid/mail';
 import type { AppConfig } from '../config/configuration.js';
-import type { RepositoryRef } from '@package-validator/contracts';
+import { formatPeriod, type ReportPeriod, type RepositoryRef } from '@package-validator/contracts';
 import { escapeHtml, type RenderedReport } from '../report/render-report.js';
 
 export function withUnsubscribeFooter(report: RenderedReport, url: string): RenderedReport {
@@ -17,14 +17,15 @@ export function withUnsubscribeFooter(report: RenderedReport, url: string): Rend
 
 export function confirmationMessage({ owner, repo }: RepositoryRef, periodHours: number, url: string): RenderedReport {
   const title = `${owner}/${repo}`;
+  const period = formatPeriod(periodHours as ReportPeriod);
   return {
     html:
       `<p>Someone asked to receive the dependency report for <strong>${escapeHtml(title)}</strong> ` +
-      `at this address every ${periodHours} hours.</p>` +
+      `at this address every ${period}.</p>` +
       `<p><a href="${escapeHtml(url)}">Confirm the subscription</a></p>` +
       '<p style="color:#6b7280;font-size:12px">If that was not you, ignore this email; the request expires in 24 hours.</p>',
     text:
-      `Someone asked to receive the dependency report for ${title} at this address every ${periodHours} hours.\n\n` +
+      `Someone asked to receive the dependency report for ${title} at this address every ${period}.\n\n` +
       `Confirm the subscription: ${url}\n\n` +
       'If that was not you, ignore this email; the request expires in 24 hours.',
   };
