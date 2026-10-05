@@ -38,7 +38,7 @@
   "homepage": "https://github.com/mmayadag/package-validator#readme",
   "devDependencies": {
     "@playwright/test": "^1.63.0",
-    "prettier": "^3.9.7",
+    "prettier": "^3.9.9",
     "prettier-plugin-svelte": "^4.1.1"
   }
 }
