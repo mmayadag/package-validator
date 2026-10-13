@@ -1,6 +1,6 @@
 {
   "name": "package-validator-api",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Reports outdated package.json dependencies of a GitHub repository",
   "author": {
     "name": "Murat Mayadağ",
